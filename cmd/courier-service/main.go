@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -12,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Quasar777/courier-service/api"
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 )
@@ -38,15 +38,8 @@ func main() {
 	// setting up a router 
 	r := chi.NewRouter()
 
-	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]string {
-			"message":"pong",
-		})
-	})
-
-	r.Head("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNoContent)
-	})
+	r.Get("/ping", api.HandlePing)
+	r.Head("/healthcheck", api.HandleHealthCheck)
 
 	// setting up a server
 	srv := &http.Server{
