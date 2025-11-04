@@ -41,6 +41,7 @@ func main() {
 	r.Get("/courier/{id}", api.GetCourier)
 	r.Get("/couriers", api.GetCouriers)
 	r.Post("/couriers", api.CreateCourier)
+	r.Put("/courier", api.UpdateCourier)
 
 	// setting up a server
 	srv := &http.Server{

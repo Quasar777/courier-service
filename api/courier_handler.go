@@ -105,20 +105,20 @@ func CreateCourier(w http.ResponseWriter, r *http.Request) {
 	conn := database.InitConnection(ctx)
 	defer conn.Close(ctx)
 
-	// check constraints
+	// Check confilcts
 	var candidatID int
 	err := conn.QueryRow(ctx, 
-		"SELECT * FROM couriers WHERE phone = $1",
+		"SELECT id FROM couriers WHERE phone = $1",
 		resCourier.Phone).Scan(&candidatID)
 	if err != pgx.ErrNoRows {
 		w.WriteHeader(http.StatusConflict)
 		json.NewEncoder(w).Encode(map[string]string {
-			"error":"corier with this phone number is already exists",
+			"error":"courier with this phone number is already exists",
 		})
 		return
 	}
 
-	// create courier
+	// Create courier
 	err = conn.QueryRow(ctx,
 		"INSERT INTO couriers (name, lastname, phone, status) VALUES ($1, $2, $3, $4) RETURNING id;",
 		resCourier.Name, resCourier.Lastname, resCourier.Phone, defaultStatus,
@@ -132,5 +132,72 @@ func CreateCourier(w http.ResponseWriter, r *http.Request) {
 	resCourier.Status = defaultStatus
 
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(resCourier)
+}
+
+func UpdateCourier(w http.ResponseWriter, r *http.Request) {
+	var resCourier courier
+	if err := json.NewDecoder(r.Body).Decode(&resCourier); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("error in courier handler:", err)
+		return
+	}
+	if resCourier.Name == "" || resCourier.Lastname == "" ||
+	   resCourier.Phone == "" || resCourier.Status == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string {
+			"error":"fields 'name', 'lastname', 'phone', 'status' must be filled",
+		})
+		return
+	}
+
+	ctx := context.Background()
+	conn := database.InitConnection(ctx)
+	defer conn.Close(ctx)
+
+	var candidatCourier courier
+	err := conn.QueryRow(ctx, 
+		"SELECT id, name, lastname, phone, status FROM couriers WHERE id = $1",
+		resCourier.Id).Scan(
+			&candidatCourier.Id,
+			&candidatCourier.Name,
+			&candidatCourier.Lastname,
+			&candidatCourier.Phone,
+			&candidatCourier.Status,
+		)	
+	if err == pgx.ErrNoRows {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("error in courier handler:", err)
+		return
+	}
+
+	// Check confilcts (phone)
+	var samePhoneCandidatID int
+	err = conn.QueryRow(ctx, 
+		"SELECT id FROM couriers WHERE phone = $1 AND id != $2;",
+		resCourier.Phone, resCourier.Id).Scan(&samePhoneCandidatID)
+	if err != pgx.ErrNoRows {
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(map[string]string {
+			"error":"courier with this phone number is already exists",
+		})
+		return
+	}
+	
+	// Update
+	_, err = conn.Exec(ctx,
+		"UPDATE couriers SET name = $1, lastname = $2, phone = $3, status = $4 WHERE id = $5",
+		resCourier.Name, resCourier.Lastname, resCourier.Phone, resCourier.Status, resCourier.Id,
+	)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("error in courier handler:", err)
+		return
+	}
+
 	json.NewEncoder(w).Encode(resCourier)
 }
