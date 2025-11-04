@@ -38,8 +38,7 @@ func main() {
 	// setting up a router 
 	r := chi.NewRouter()
 
-	r.Get("/ping", api.HandlePing)
-	r.Head("/healthcheck", api.HandleHealthCheck)
+	r.Get("/courier/{id}", api.GetCourier)
 
 	// setting up a server
 	srv := &http.Server{
