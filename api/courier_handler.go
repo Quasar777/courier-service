@@ -38,13 +38,46 @@ func GetCourier(w http.ResponseWriter, r *http.Request) {
 		"SELECT id, name, lastname, phone, status FROM couriers WHERE id = $1",
 		id).
 		Scan(&courier.Id, &courier.Name, &courier.Lastname, &courier.Phone, &courier.Status)
-	if err != nil {
-		fmt.Println("error in courier handler:", err)
-	}
 	if err == pgx.ErrNoRows {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("error in courier handler:", err)
+		return
+	}
+	
 	json.NewEncoder(w).Encode(courier)
+}
+
+
+func GetCouriers(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+
+	conn := database.InitConnection(ctx)
+	defer conn.Close(ctx)
+
+	var couriers []courier
+	rows, err := conn.Query(ctx,
+		"SELECT id, name, lastname, phone, status FROM couriers",
+	)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("error in courier handler:", err)
+		return
+	}
+
+	for rows.Next() {
+		var courier courier
+		err := rows.Scan(&courier.Id, &courier.Name, &courier.Lastname, &courier.Phone, &courier.Status)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Println("error in courier handler:", err)
+			return
+		}
+		couriers = append(couriers, courier)
+	}
+
+	json.NewEncoder(w).Encode(couriers)
 }

@@ -39,6 +39,7 @@ func main() {
 	r := chi.NewRouter()
 
 	r.Get("/courier/{id}", api.GetCourier)
+	r.Get("/couriers", api.GetCouriers)
 
 	// setting up a server
 	srv := &http.Server{
