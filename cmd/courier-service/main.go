@@ -28,7 +28,7 @@ func main() {
 		log.Println("error when loading .env file:", err)
 	}
 
-	port := getEnv("PORT", defaultPort)
+	port := getEnv("SERVER_PORT", defaultPort)
 	flagPort := flag.String("port", port, "specifying a port")
 	flag.Parse()
 	if *flagPort != port {
