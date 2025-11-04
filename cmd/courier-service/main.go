@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Quasar777/courier-service/api"
+	"github.com/Quasar777/courier-service/database"
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 )
@@ -35,15 +36,24 @@ func main() {
 		port = *flagPort
 	}
 
-	// setting up a router 
+	pool, err := database.InitPool(context.Background())
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer pool.Close()
+
+	// Creating server with connections pool
+	s := api.NewServer(pool)
+	
+	// Setup router
 	r := chi.NewRouter()
 
-	r.Get("/courier/{id}", api.GetCourier)
-	r.Get("/couriers", api.GetCouriers)
-	r.Post("/couriers", api.CreateCourier)
-	r.Put("/courier", api.UpdateCourier)
+	r.Get("/courier/{id}", s.GetCourier)
+	r.Get("/couriers", s.GetCouriers)
+	r.Post("/couriers", s.CreateCourier)
+	r.Put("/courier", s.UpdateCourier)
 
-	// setting up a server
+	// Setup http server
 	srv := &http.Server{
 		Addr: fmt.Sprintf(":%v", port),
 		Handler: r,
@@ -61,7 +71,7 @@ func main() {
 	
 	<-ctx.Done()
 
-	// gracefult shutdown
+	// Gracefult shutdown
 	shutDownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 	
@@ -73,7 +83,6 @@ func main() {
 	}
 }
 
-// getEnv возвращает значение env или дефолт
 func getEnv(key, def string) string {
 	if v := os.Getenv(key); v != "" {
 		return v

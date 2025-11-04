@@ -1,13 +1,11 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
-	"github.com/Quasar777/courier-service/database"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 )
@@ -24,7 +22,7 @@ const (
 	defaultStatus = "paused"
 )
 
-func GetCourier(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetCourier(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
@@ -32,13 +30,10 @@ func GetCourier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
-
-	conn := database.InitConnection(ctx)
-	defer conn.Close(ctx)
-
+	ctx := r.Context()
+	
 	var courier courier
-	err = conn.QueryRow(ctx,
+	err = s.DB.QueryRow(ctx,
 		"SELECT id, name, lastname, phone, status FROM couriers WHERE id = $1",
 		id).
 		Scan(&courier.Id, &courier.Name, &courier.Lastname, &courier.Phone, &courier.Status)
@@ -56,14 +51,11 @@ func GetCourier(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func GetCouriers(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
-
-	conn := database.InitConnection(ctx)
-	defer conn.Close(ctx)
+func (s *Server) GetCouriers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()	
 
 	var couriers []courier
-	rows, err := conn.Query(ctx,
+	rows, err := s.DB.Query(ctx,
 		"SELECT id, name, lastname, phone, status FROM couriers",
 	)
 	if err != nil {
@@ -71,6 +63,7 @@ func GetCouriers(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("error in courier handler:", err)
 		return
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var courier courier
@@ -86,7 +79,7 @@ func GetCouriers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(couriers)
 }
 
-func CreateCourier(w http.ResponseWriter, r *http.Request) {
+func (s *Server) CreateCourier(w http.ResponseWriter, r *http.Request) {
 	var resCourier courier
 	if err := json.NewDecoder(r.Body).Decode(&resCourier); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -101,13 +94,11 @@ func CreateCourier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
-	conn := database.InitConnection(ctx)
-	defer conn.Close(ctx)
+	ctx := r.Context()
 
 	// Check confilcts
 	var candidatID int
-	err := conn.QueryRow(ctx, 
+	err := s.DB.QueryRow(ctx, 
 		"SELECT id FROM couriers WHERE phone = $1",
 		resCourier.Phone).Scan(&candidatID)
 	if err != pgx.ErrNoRows {
@@ -119,7 +110,7 @@ func CreateCourier(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create courier
-	err = conn.QueryRow(ctx,
+	err = s.DB.QueryRow(ctx,
 		"INSERT INTO couriers (name, lastname, phone, status) VALUES ($1, $2, $3, $4) RETURNING id;",
 		resCourier.Name, resCourier.Lastname, resCourier.Phone, defaultStatus,
 	).Scan(&resCourier.Id)
@@ -135,7 +126,7 @@ func CreateCourier(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resCourier)
 }
 
-func UpdateCourier(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateCourier(w http.ResponseWriter, r *http.Request) {
 	var resCourier courier
 	if err := json.NewDecoder(r.Body).Decode(&resCourier); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -151,12 +142,10 @@ func UpdateCourier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
-	conn := database.InitConnection(ctx)
-	defer conn.Close(ctx)
+	ctx := r.Context()
 
 	var candidatCourier courier
-	err := conn.QueryRow(ctx, 
+	err := s.DB.QueryRow(ctx, 
 		"SELECT id, name, lastname, phone, status FROM couriers WHERE id = $1",
 		resCourier.Id).Scan(
 			&candidatCourier.Id,
@@ -177,7 +166,7 @@ func UpdateCourier(w http.ResponseWriter, r *http.Request) {
 
 	// Check confilcts (phone)
 	var samePhoneCandidatID int
-	err = conn.QueryRow(ctx, 
+	err = s.DB.QueryRow(ctx, 
 		"SELECT id FROM couriers WHERE phone = $1 AND id != $2;",
 		resCourier.Phone, resCourier.Id).Scan(&samePhoneCandidatID)
 	if err != pgx.ErrNoRows {
@@ -189,7 +178,7 @@ func UpdateCourier(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Update
-	_, err = conn.Exec(ctx,
+	_, err = s.DB.Exec(ctx,
 		"UPDATE couriers SET name = $1, lastname = $2, phone = $3, status = $4 WHERE id = $5",
 		resCourier.Name, resCourier.Lastname, resCourier.Phone, resCourier.Status, resCourier.Id,
 	)

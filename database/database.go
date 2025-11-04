@@ -25,7 +25,7 @@ func InitConnection(ctx context.Context) *pgx.Conn {
 	return conn
 }
 
-func InitPool(ctx context.Context) *pgxpool.Pool {
+func InitPool(ctx context.Context) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(getConnectionString())
 	if err != nil {
 		log.Fatal(err)
@@ -36,15 +36,15 @@ func InitPool(ctx context.Context) *pgxpool.Pool {
 
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	err = pool.Ping(ctx)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return pool
+	return pool, nil
 }
 
 
