@@ -29,6 +29,7 @@ func main() {
 		log.Println("error when loading .env file:", err)
 	}
 
+	// Flag parsing
 	port := getEnv("SERVER_PORT", defaultPort)
 	flagPort := flag.String("port", port, "specifying a port")
 	flag.Parse()
@@ -36,13 +37,14 @@ func main() {
 		port = *flagPort
 	}
 
+	// Connection pool init
 	pool, err := database.InitPool(context.Background())
     if err != nil {
         log.Fatal(err)
     }
     defer pool.Close()
 
-	// Creating server with connections pool
+	// Creating server with connection pool
 	s := api.NewServer(pool)
 	
 	// Setup router
