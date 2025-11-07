@@ -6,8 +6,7 @@ GOOSE_DRIVER = postgres
 GOOSE_DBSTRING = ${DB_CONNECTION_STRING}
 MIGRATIONS_DIR = migrations
 
-.PHONY: migrate-up migrate-down migrate-status migrate-create migrate-version
-
+.PHONY: migrate-up migrate-down migrate-status migrate-create migrate-version run
 
 # Применение миграций
 migrate-up:

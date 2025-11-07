@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Quasar777/courier-service/api"
-	"github.com/Quasar777/courier-service/database"
+	"github.com/Quasar777/courier-service/internal/api"
+	"github.com/Quasar777/courier-service/internal/database"
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 )

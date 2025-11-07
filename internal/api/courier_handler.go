@@ -101,6 +101,8 @@ func (s *Server) CreateCourier(w http.ResponseWriter, r *http.Request) {
 	err := s.DB.QueryRow(ctx, 
 		"SELECT id FROM couriers WHERE phone = $1",
 		resCourier.Phone).Scan(&candidatID)
+	// TODO: при любой другой ошибке, отличной от ErrNoRows, будет выполняться данный блок -
+	// Так быть не должно. Понять, как правильно обработать
 	if err != pgx.ErrNoRows {
 		w.WriteHeader(http.StatusConflict)
 		json.NewEncoder(w).Encode(map[string]string {
