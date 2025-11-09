@@ -1,92 +1,76 @@
 package api
 
+// TODO: исправить все возвращения ошибок на http.Error(...)
+
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+
+	"github.com/Quasar777/courier-service/internal/model"
+	"github.com/Quasar777/courier-service/repository"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5"
 )
 
-type courier struct {
-	Id       int
-	Name     string `json:"name"`
-	Lastname string `json:"lastname"`
-	Phone    string `json:"phone"`
-	Status   string `json:"status"`
+type CourierController struct {
+	repository repository.CourierRepository
 }
 
-const (
-	defaultStatus = "paused"
-)
+func NewCourierController(r repository.CourierRepository) *CourierController {
+	return &CourierController{repository: r}
+}
 
-func (s *Server) GetCourier(w http.ResponseWriter, r *http.Request) {
+func (c *CourierController) Get(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, `{"error": "Invalid id"}`, http.StatusBadRequest)
 		return
 	}
 
 	ctx := r.Context()
 	
-	var courier courier
-	err = s.DB.QueryRow(ctx,
-		"SELECT id, name, lastname, phone, status FROM couriers WHERE id = $1",
-		id).
-		Scan(&courier.Id, &courier.Name, &courier.Lastname, &courier.Phone, &courier.Status)
-	if err == pgx.ErrNoRows {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
+	var courierDB *model.CourierDB
+	courierDB, err = c.repository.GetOneById(ctx, id)
+
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Println("error in courier handler:", err)
+		if strings.Contains(err.Error(), "courier with a such id is not found") {
+			http.Error(w, `{"error": "Courier not found"}`, http.StatusNotFound)
+			return
+		}
+		http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
 		return
 	}
 	
-	json.NewEncoder(w).Encode(courier)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(courierDB)
 }
 
 
-func (s *Server) GetCouriers(w http.ResponseWriter, r *http.Request) {
+func (c *CourierController) GetMany(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()	
 
-	var couriers []courier
-	rows, err := s.DB.Query(ctx,
-		"SELECT id, name, lastname, phone, status FROM couriers",
-	)
+	couriers, err := c.repository.GetAll(ctx) 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Println("error in courier handler:", err)
+		http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var courier courier
-		err := rows.Scan(&courier.Id, &courier.Name, &courier.Lastname, &courier.Phone, &courier.Status)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Println("error in courier handler:", err)
-			return
-		}
-		couriers = append(couriers, courier)
-	}
-
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(couriers)
 }
 
-func (s *Server) CreateCourier(w http.ResponseWriter, r *http.Request) {
-	var resCourier courier
-	if err := json.NewDecoder(r.Body).Decode(&resCourier); err != nil {
+func (c *CourierController) Create(w http.ResponseWriter, r *http.Request) {
+	var reqCourier model.CreateCourierRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqCourier); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Println("error in courier handler:", err)
 		return
 	}
-	if resCourier.Name == "" || resCourier.Lastname == "" || resCourier.Phone == "" {
+	if reqCourier.Name == "" || reqCourier.Lastname == "" || reqCourier.Phone == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string {
 			"error":"fields 'name', 'lastname', 'phone' must be filled",
@@ -96,50 +80,34 @@ func (s *Server) CreateCourier(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// Check confilcts (phone)
-	var candidatID int
-	err := s.DB.QueryRow(ctx, 
-		"SELECT id FROM couriers WHERE phone = $1",
-		resCourier.Phone).Scan(&candidatID)
-	if err == nil {
-		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(map[string]string {
-			"error":"courier with this phone number is already exists",
-		})
-		return
-	}
-	if err != pgx.ErrNoRows {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Println("error in courier handler:", err)
+	id, err := c.repository.Create(ctx, &reqCourier)
+	if err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			http.Error(w, `{"error": "courier with this phone is already exists"}`, http.StatusConflict)
+			return
+		}
+		http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
 		return
 	}
 
-	// Create courier
-	err = s.DB.QueryRow(ctx,
-		"INSERT INTO couriers (name, lastname, phone, status) VALUES ($1, $2, $3, $4) RETURNING id;",
-		resCourier.Name, resCourier.Lastname, resCourier.Phone, defaultStatus,
-	).Scan(&resCourier.Id)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Println("error in courier handler:", err)
-		return
+	response := map[string]interface{}{
+		"id": id,
+		"message": "Courier created succesfully",
 	}
-	
-	resCourier.Status = defaultStatus
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(resCourier)
+	json.NewEncoder(w).Encode(response)
 }
 
-func (s *Server) UpdateCourier(w http.ResponseWriter, r *http.Request) {
-	var resCourier courier
-	if err := json.NewDecoder(r.Body).Decode(&resCourier); err != nil {
+func (c *CourierController) Update(w http.ResponseWriter, r *http.Request) {
+	var reqCourier model.UpdateCourierRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqCourier); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Println("error in courier handler:", err)
 		return
 	}
-	if resCourier.Name == "" || resCourier.Lastname == "" ||
-	   resCourier.Phone == "" || resCourier.Status == "" {
+	if reqCourier.Name == "" || reqCourier.Lastname == "" ||
+	   reqCourier.Phone == "" || reqCourier.Status == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string {
 			"error":"fields 'name', 'lastname', 'phone', 'status' must be filled",
@@ -149,49 +117,50 @@ func (s *Server) UpdateCourier(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	var candidatCourier courier
-	err := s.DB.QueryRow(ctx, 
-		"SELECT id, name, lastname, phone, status FROM couriers WHERE id = $1",
-		resCourier.Id).Scan(
-			&candidatCourier.Id,
-			&candidatCourier.Name,
-			&candidatCourier.Lastname,
-			&candidatCourier.Phone,
-			&candidatCourier.Status,
-		)	
-	if err == pgx.ErrNoRows {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
+	err := c.repository.Update(ctx, &reqCourier)
+
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Println("error in courier handler:", err)
+		if strings.Contains(err.Error(), "already exists") {
+			http.Error(w, `{"error": "Courier with this phone is already exists"}`, http.StatusConflict)
+			return
+		}
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, `{"error": "Courier not found"}`, http.StatusNotFound)
+			return
+		}
+		http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
 		return
 	}
 
-	// Check confilcts (phone)
-	var samePhoneCandidatID int
-	err = s.DB.QueryRow(ctx, 
-		"SELECT id FROM couriers WHERE phone = $1 AND id != $2;",
-		resCourier.Phone, resCourier.Id).Scan(&samePhoneCandidatID)
-	if err != pgx.ErrNoRows {
-		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(map[string]string {
-			"error":"courier with this phone number is already exists",
-		})
-		return
+	response := map[string]string {
+		"message": "Profile updated successfully",
 	}
-	
-	// Update
-	_, err = s.DB.Exec(ctx,
-		"UPDATE couriers SET name = $1, lastname = $2, phone = $3, status = $4 WHERE id = $5",
-		resCourier.Name, resCourier.Lastname, resCourier.Phone, resCourier.Status, resCourier.Id,
-	)
+
+	json.NewEncoder(w).Encode(response)
+}
+
+func (c *CourierController) Delete(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idParam)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Println("error in courier handler:", err)
+		http.Error(w, `{"error": "Invalid id"}`, http.StatusBadRequest)
 		return
 	}
 
-	json.NewEncoder(w).Encode(resCourier)
+	err = c.repository.Delete(r.Context(), id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, `{"error": "Courier not found"}`, http.StatusNotFound)
+			return
+		}
+		http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]string {
+		"message": "Courier deleted successfully",
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }

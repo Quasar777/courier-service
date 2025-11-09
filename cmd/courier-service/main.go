@@ -13,6 +13,7 @@ import (
 
 	"github.com/Quasar777/courier-service/internal/api"
 	"github.com/Quasar777/courier-service/internal/database"
+	"github.com/Quasar777/courier-service/repository"
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 )
@@ -44,21 +45,13 @@ func main() {
     }
     defer pool.Close()
 
-	// Creating server with connection pool
-	s := api.NewServer(pool)
+	courierRepository := repository.NewCourierRepository(pool)
+	courier := api.NewCourierController(*courierRepository)
 	
-	// Setup router
-	r := chi.NewRouter()
-
-	r.Get("/courier/{id}", s.GetCourier)
-	r.Get("/couriers", s.GetCouriers)
-	r.Post("/couriers", s.CreateCourier)
-	r.Put("/courier", s.UpdateCourier)
-
 	// Setup http server
 	srv := &http.Server{
 		Addr: fmt.Sprintf(":%v", port),
-		Handler: r,
+		Handler: initRouter(courier),
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -90,4 +83,16 @@ func getEnv(key, def string) string {
 		return v
 	}
 	return def
+}
+
+func initRouter(courier *api.CourierController) *chi.Mux {
+	r := chi.NewRouter()
+
+	r.Get("/courier/{id}", courier.Get)
+	r.Get("/couriers", courier.GetMany)
+	r.Post("/couriers", courier.Create)
+	r.Put("/courier", courier.Update)
+	r.Delete("/courier/{id}", courier.Delete)
+
+	return r
 }
