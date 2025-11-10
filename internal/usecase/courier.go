@@ -1,5 +1,7 @@
 package usecase
 
+// UseCase / Service / Manager - business logic layer 
+
 import (
 	"context"
 	"errors"

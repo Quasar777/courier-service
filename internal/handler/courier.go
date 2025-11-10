@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 // TODO: добавить application/json в ответах
 

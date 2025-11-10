@@ -11,11 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Quasar777/courier-service/internal/database"
-	"github.com/Quasar777/courier-service/internal/handlers"
+	"github.com/Quasar777/courier-service/internal/handler"
 	"github.com/Quasar777/courier-service/internal/repository"
 	"github.com/Quasar777/courier-service/internal/usecase"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
@@ -40,15 +40,16 @@ func main() {
 	}
 
 	// Connection pool init
-	pool, err := database.InitPool(context.Background())
+	pool, err := initPool(context.Background())
     if err != nil {
         log.Fatal(err)
     }
     defer pool.Close()
 
+	// Dependency Injection
 	courierRepository := repository.NewCourierRepository(pool)
 	courierUseCase := usecase.NewCourierUseCase(courierRepository)
-	courier := handlers.NewCourierController(courierUseCase)
+	courier := handler.NewCourierController(courierUseCase)
 	
 	// Setup http server
 	srv := &http.Server{
@@ -80,14 +81,7 @@ func main() {
 	}
 }
 
-func getEnv(key, def string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return def
-}
-
-func initRouter(courier *handlers.CourierController) *chi.Mux {
+func initRouter(courier *handler.CourierController) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Get("/courier/{id}", courier.Get)
@@ -97,4 +91,47 @@ func initRouter(courier *handlers.CourierController) *chi.Mux {
 	r.Delete("/courier/{id}", courier.Delete)
 
 	return r
+}
+
+func initPool(ctx context.Context) (*pgxpool.Pool, error) {
+	cfg, err := pgxpool.ParseConfig(getConnectionString())
+	if err != nil {
+		log.Fatal(err)
+	}
+	cfg.MaxConns = 10
+	cfg.MaxConnLifetime = time.Hour
+	cfg.MinConns = 5
+
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = pool.Ping(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return pool, nil
+}
+
+func getConnectionString() string {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	connString := os.Getenv("DB_CONNECTION_STRING")
+	if connString == "" {
+		log.Fatal("DB_CONNECTION_STRING not set in .env")
+	}
+
+	return connString
+}
+
+func getEnv(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
 }
