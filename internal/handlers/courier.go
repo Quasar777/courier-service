@@ -15,10 +15,10 @@ import (
 )
 
 type CourierController struct {
-	useCase usecase.CourierUseCase
+	useCase CourierUseCase
 }
 
-func NewCourierController(u usecase.CourierUseCase) *CourierController {
+func NewCourierController(u CourierUseCase) *CourierController {
 	return &CourierController{useCase:  u}
 }
 

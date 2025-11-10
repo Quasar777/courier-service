@@ -9,10 +9,10 @@ import (
 )
 
 type CourierUseCase struct {
-	repository repository.CourierRepository
+	repository CourierRepository
 }
 
-func NewCourierUseCase(r repository.CourierRepository) *CourierUseCase {
+func NewCourierUseCase(r CourierRepository) *CourierUseCase {
 	return &CourierUseCase{repository: r}
 }
 
@@ -30,6 +30,7 @@ func (u *CourierUseCase) GetCourier(ctx context.Context, id int) (*model.Courier
 		Id: courierDB.Id,
 		Name: courierDB.Name,
 		Lastname: courierDB.Lastname,
+		Phone: courierDB.Phone,
 		Status: courierDB.Status,
 	}
 
@@ -66,7 +67,7 @@ func (u *CourierUseCase) CreateCourier(ctx context.Context, req model.CreateCour
 		return 0, ErrMissingRequiredFields
 	}
 
-	courierDB := &model.CourierDB{
+	courierDB := &model.CreateCourierRequest{
 		Name: req.Name,
 		Lastname: req.Lastname,
 		Phone: req.Phone,

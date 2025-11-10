@@ -19,7 +19,6 @@ func NewCourierRepository(pool *pgxpool.Pool) *CourierRepository {
 	return &CourierRepository{pool: pool}
 }
 
-
 func (r *CourierRepository) GetOneById(ctx context.Context, id int) (*model.CourierDB, error) {
 	var courier model.CourierDB
 	err := r.pool.QueryRow(ctx,`
@@ -82,7 +81,7 @@ func (r *CourierRepository) GetAll(ctx context.Context) ([]model.CourierDB, erro
 	return couriers, nil
 }
 
-func (r *CourierRepository) Create(ctx context.Context, courier *model.CourierDB) (int, error) {
+func (r *CourierRepository) Create(ctx context.Context, courier *model.CreateCourierRequest) (int, error) {
 	var id int
 	err := r.pool.QueryRow(ctx, `
 		INSERT INTO couriers (name, lastname, phone, status) 

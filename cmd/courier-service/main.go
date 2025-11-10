@@ -46,8 +46,8 @@ func main() {
     }
     defer pool.Close()
 
-	courierRepository := *repository.NewCourierRepository(pool)
-	courierUseCase := *usecase.NewCourierUseCase(courierRepository)
+	courierRepository := repository.NewCourierRepository(pool)
+	courierUseCase := usecase.NewCourierUseCase(courierRepository)
 	courier := handlers.NewCourierController(courierUseCase)
 	
 	// Setup http server
