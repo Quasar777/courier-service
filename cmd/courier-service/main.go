@@ -11,9 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Quasar777/courier-service/internal/api"
 	"github.com/Quasar777/courier-service/internal/database"
-	"github.com/Quasar777/courier-service/repository"
+	"github.com/Quasar777/courier-service/internal/handlers"
+	"github.com/Quasar777/courier-service/internal/repository"
+	"github.com/Quasar777/courier-service/internal/usecase"
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 )
@@ -45,8 +46,9 @@ func main() {
     }
     defer pool.Close()
 
-	courierRepository := repository.NewCourierRepository(pool)
-	courier := api.NewCourierController(*courierRepository)
+	courierRepository := *repository.NewCourierRepository(pool)
+	courierUseCase := *usecase.NewCourierUseCase(courierRepository)
+	courier := handlers.NewCourierController(courierUseCase)
 	
 	// Setup http server
 	srv := &http.Server{
@@ -85,7 +87,7 @@ func getEnv(key, def string) string {
 	return def
 }
 
-func initRouter(courier *api.CourierController) *chi.Mux {
+func initRouter(courier *handlers.CourierController) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Get("/courier/{id}", courier.Get)

@@ -82,7 +82,7 @@ func (r *CourierRepository) GetAll(ctx context.Context) ([]model.CourierDB, erro
 	return couriers, nil
 }
 
-func (r *CourierRepository) Create(ctx context.Context, courier *model.CreateCourierRequest) (int, error) {
+func (r *CourierRepository) Create(ctx context.Context, courier *model.CourierDB) (int, error) {
 	var id int
 	err := r.pool.QueryRow(ctx, `
 		INSERT INTO couriers (name, lastname, phone, status) 
