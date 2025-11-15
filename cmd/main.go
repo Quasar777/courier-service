@@ -28,7 +28,7 @@ func main() {
 	// env file loading and flags parsing
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("error when loading .env file:", err)
+		log.Fatal("error when loading .env file:", err)
 	}
 
 	// Flag parsing
@@ -39,10 +39,10 @@ func main() {
 		port = *flagPort
 	}
 
-	// Connection pool init
-	pool, err := initPool(context.Background())
+	// DB init
+	pool, err := mustInitPool(context.Background())
     if err != nil {
-        log.Fatal(err)
+        log.Fatal("error connecting to database: ", err)
     }
     defer pool.Close()
 
@@ -93,7 +93,7 @@ func initRouter(courier *handler.CourierController) *chi.Mux {
 	return r
 }
 
-func initPool(ctx context.Context) (*pgxpool.Pool, error) {
+func mustInitPool(ctx context.Context) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(getConnectionString())
 	if err != nil {
 		log.Fatal(err)
@@ -107,11 +107,27 @@ func initPool(ctx context.Context) (*pgxpool.Pool, error) {
 		return nil, err
 	}
 
-	err = pool.Ping(ctx)
-	if err != nil {
-		return nil, err
+	pingAttemptsLimit := 3
+	var pingErr error
+
+	for i := range pingAttemptsLimit {
+		pingCtx, pingCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		pingErr = pool.Ping(pingCtx)
+		pingCancel()
+		if pingErr == nil {
+			break
+		}
+		log.Printf("db ping attempt %d failed: %v", i, pingErr)
+		if i < pingAttemptsLimit {
+			time.Sleep(500 * time.Millisecond)
+		}
 	}
 
+	if pingErr != nil {
+		log.Fatalf("Unable to ping database")
+	}
+	
+	log.Println("Database connection pool established")
 	return pool, nil
 }
 
