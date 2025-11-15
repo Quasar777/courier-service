@@ -4,10 +4,8 @@ package usecase
 
 import (
 	"context"
-	"errors"
 
 	"github.com/Quasar777/courier-service/internal/model"
-	"github.com/Quasar777/courier-service/internal/repository"
 )
 
 type CourierUseCase struct {
@@ -19,101 +17,21 @@ func NewCourierUseCase(r CourierRepository) *CourierUseCase {
 }
 
 func (u *CourierUseCase) GetCourier(ctx context.Context, id int) (*model.Courier, error) {
-	courierDB, err := u.repository.GetOneById(ctx, id)
-
-	if err != nil {
-		if errors.Is(err, repository.ErrCourierNotFound) {
-			return nil, ErrCourierNotFound
-		}
-		return nil, err
-	}
-
-	courier := &model.Courier{
-		Id: courierDB.Id,
-		Name: courierDB.Name,
-		Lastname: courierDB.Lastname,
-		Phone: courierDB.Phone,
-		Status: courierDB.Status,
-	}
-
-	return courier, nil
+	return u.repository.GetOneById(ctx, id)
 }
 
 func (u *CourierUseCase) GetCouriers(ctx context.Context) ([]model.Courier, error) {
-	couriersDB, err := u.repository.GetAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var couriers []model.Courier
-	for _, courierDB := range couriersDB {
-		courier := model.Courier{
-			Id: courierDB.Id,
-			Name: courierDB.Name,
-			Lastname: courierDB.Lastname,
-			Phone: courierDB.Phone,
-			Status: courierDB.Status,
-		}
-		couriers = append(couriers, courier)
-	}
-
-	if couriers == nil {
-		couriers = []model.Courier{}
-	}
-
-	return couriers, nil
+	return u.repository.GetAll(ctx)
 }
 
 func (u *CourierUseCase) CreateCourier(ctx context.Context, req model.CreateCourierRequest) (int, error) {
-	if req.Name == "" || req.Lastname == "" || req.Phone == "" {
-		return 0, ErrMissingRequiredFields
-	}
-
-	courierDB := &model.CreateCourierRequest{
-		Name: req.Name,
-		Lastname: req.Lastname,
-		Phone: req.Phone,
-		Status: req.Status,
-	}
-	id, err := u.repository.Create(ctx, courierDB)
-	if err != nil {
-		if errors.Is(err, repository.ErrPhoneConflict) {
-			return 0, ErrPhoneConflict
-		}
-		return 0, err
-	}
-
-	return id, nil
+	return u.repository.Create(ctx, &req)
 }
 
 func (u *CourierUseCase) UpdateCourier(ctx context.Context, req model.UpdateCourierRequest) error {
-	if req.Name == "" || req.Lastname == "" ||
-	   req.Phone == "" || req.Status == "" {
-		return ErrMissingRequiredFields
-	}
-
-	err := u.repository.Update(ctx, &req)	
-	if err != nil {
-		if errors.Is(err, repository.ErrPhoneConflict) {
-			return ErrPhoneConflict
-		}
-		if errors.Is(err, repository.ErrCourierNotFound) {
-			return  ErrCourierNotFound
-		}
-		return err
-	}
-
-	return nil
+	return u.repository.Update(ctx, &req)
 }
 
 func (u *CourierUseCase) DeleteCourier(ctx context.Context, id int) error {
-	err := u.repository.Delete(ctx, id)
-	if err != nil {
-		if errors.Is(err, repository.ErrCourierNotFound) {
-			return ErrCourierNotFound
-		}
-		return err
-	}
-
-	return nil
+	return u.repository.Delete(ctx, id)
 }

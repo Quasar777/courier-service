@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/Quasar777/courier-service/internal/model"
-	"github.com/Quasar777/courier-service/internal/usecase"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -35,7 +34,7 @@ func (c *CourierController) Get(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		switch err {
-		case usecase.ErrCourierNotFound:
+		case model.ErrCourierNotFound:
 			http.Error(w, `{"error": "Courier not found"}`, http.StatusNotFound)
 		default:
 			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
@@ -71,9 +70,9 @@ func (c *CourierController) Create(w http.ResponseWriter, r *http.Request) {
 	id, err := c.useCase.CreateCourier(r.Context(), reqCourier)
 	if err != nil {
 		switch err {
-		case usecase.ErrMissingRequiredFields:
+		case model.ErrMissingRequiredFields:
 			http.Error(w, `{"error": "missing required fields"}`, http.StatusBadRequest)
-		case usecase.ErrPhoneConflict:
+		case model.ErrPhoneConflict:
 			http.Error(w, `{"error": "courier with this phone is already exists"}`, http.StatusConflict)
 		default:
 			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
@@ -102,9 +101,9 @@ func (c *CourierController) Update(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		switch err {
-		case usecase.ErrMissingRequiredFields:
+		case model.ErrMissingRequiredFields:
 			http.Error(w, `{"error": "missing required fields"}`, http.StatusBadRequest)
-		case usecase.ErrPhoneConflict:
+		case model.ErrPhoneConflict:
 			http.Error(w, `{"error": "courier with this phone is already exists"}`, http.StatusConflict)
 		default:
 			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)

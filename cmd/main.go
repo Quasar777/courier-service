@@ -31,7 +31,7 @@ func main() {
 		log.Fatal("error when loading .env file:", err)
 	}
 
-	// Flag parsing
+	// Port resolving
 	port := getEnv("SERVER_PORT", defaultPort)
 	flagPort := flag.String("port", port, "specifying a port")
 	flag.Parse()
@@ -51,12 +51,13 @@ func main() {
 	courierUseCase := usecase.NewCourierUseCase(courierRepository)
 	courier := handler.NewCourierController(courierUseCase)
 	
-	// Setup http server
+	// Setup HTTP server
 	srv := &http.Server{
 		Addr: fmt.Sprintf(":%v", port),
 		Handler: initRouter(courier),
 	}
 
+	// Graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	
@@ -69,7 +70,6 @@ func main() {
 	
 	<-ctx.Done()
 
-	// Gracefult shutdown
 	shutDownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 	

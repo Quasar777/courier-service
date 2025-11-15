@@ -19,8 +19,8 @@ func NewCourierRepository(pool *pgxpool.Pool) *CourierRepository {
 	return &CourierRepository{pool: pool}
 }
 
-func (r *CourierRepository) GetOneById(ctx context.Context, id int) (*model.CourierDB, error) {
-	var courier model.CourierDB
+func (r *CourierRepository) GetOneById(ctx context.Context, id int) (*model.Courier, error) {
+	var courier model.Courier
 	err := r.pool.QueryRow(ctx,`
 		SELECT id, name, lastname, phone, status 
 		FROM couriers 
@@ -35,7 +35,7 @@ func (r *CourierRepository) GetOneById(ctx context.Context, id int) (*model.Cour
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrCourierNotFound
+			return nil, model.ErrCourierNotFound
 		}
 		return nil, fmt.Errorf("database error: %w", err)
 	}
@@ -43,7 +43,7 @@ func (r *CourierRepository) GetOneById(ctx context.Context, id int) (*model.Cour
 	return &courier, nil
 }
 
-func (r *CourierRepository) GetAll(ctx context.Context) ([]model.CourierDB, error) {
+func (r *CourierRepository) GetAll(ctx context.Context) ([]model.Courier, error) {
 	rows, err := r.pool.Query(ctx,`
 		SELECT id, name, lastname, phone, status 
 		FROM couriers
@@ -54,9 +54,9 @@ func (r *CourierRepository) GetAll(ctx context.Context) ([]model.CourierDB, erro
 	}
 	defer rows.Close()
 
-	var couriers []model.CourierDB
+	var couriers []model.Courier
 	for rows.Next() {
-		var courier model.CourierDB
+		var courier model.Courier
 		err := rows.Scan(
 			&courier.Id, 
 			&courier.Name, 
@@ -75,7 +75,7 @@ func (r *CourierRepository) GetAll(ctx context.Context) ([]model.CourierDB, erro
 	}
 
 	if couriers == nil {
-		couriers = []model.CourierDB{}
+		couriers = []model.Courier{}
 	}
 
 	return couriers, nil
@@ -91,7 +91,7 @@ func (r *CourierRepository) Create(ctx context.Context, courier *model.CreateCou
 
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {
-			return 0, ErrPhoneConflict
+			return 0, model.ErrPhoneConflict
 		}
 		return 0, fmt.Errorf("database error: %w", err)
 	}
@@ -108,13 +108,13 @@ func (r *CourierRepository) Update(ctx context.Context, courier *model.UpdateCou
 
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {
-			return ErrPhoneConflict
+			return model.ErrPhoneConflict
 		}
 		return fmt.Errorf("database error: %w", err)
 	}
 
 	if result.RowsAffected() == 0 {
-		return ErrCourierNotFound
+		return model.ErrCourierNotFound
 	}
 
 	return nil
@@ -131,7 +131,7 @@ func (r *CourierRepository) Delete(ctx context.Context, id int) error {
 	}
 
 	if result.RowsAffected() == 0 {
-		return ErrCourierNotFound
+		return model.ErrCourierNotFound
 	}
 
 	return nil
