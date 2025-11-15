@@ -100,6 +100,42 @@ func (r *CourierRepository) Create(ctx context.Context, courier *model.CreateCou
 }
 
 func (r *CourierRepository) Update(ctx context.Context, courier *model.UpdateCourierRequest) error {
+	nameDB := courier.Name
+	lastnameDB := courier.Lastname
+	phoneDB := courier.Phone
+	statusDB := courier.Status
+
+	err := r.pool.QueryRow(ctx, `
+		SELECT name, lastname, phone, status
+		FROM couriers
+		WHERE id = $1
+	`, courier.Id).Scan(
+		&nameDB,
+		&lastnameDB,
+		&phoneDB,
+		&statusDB,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return model.ErrCourierNotFound
+		}
+		return fmt.Errorf("database error: %w", err)
+	}
+
+	if courier.Name == "" {
+		courier.Name = nameDB
+	}
+	if courier.Lastname == "" {
+		courier.Lastname = lastnameDB
+	}
+	if courier.Phone == "" {
+		courier.Phone = phoneDB
+	}
+	if courier.Status == "" {
+		courier.Status = statusDB
+	}
+
 	result, err := r.pool.Exec(ctx, `
 		UPDATE couriers
 		SET name = $1, lastname = $2, phone = $3, status = $4
@@ -115,6 +151,16 @@ func (r *CourierRepository) Update(ctx context.Context, courier *model.UpdateCou
 
 	if result.RowsAffected() == 0 {
 		return model.ErrCourierNotFound
+	}
+
+	_, err = r.pool.Exec(ctx, `
+		UPDATE couriers
+		SET updated_at = NOW()
+		WHERE id = $1
+	`, courier.Id)
+
+	if err != nil {
+		return fmt.Errorf("database error: %w", err)
 	}
 
 	return nil
