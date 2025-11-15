@@ -3,7 +3,7 @@ package handler
 import (
 	"context"
 
-	"github.com/Quasar777/courier-service/internal/model"
+	"github.com/Quasar777/courier-service/internal/model/courier"
 )
 
 type CourierUseCase interface {

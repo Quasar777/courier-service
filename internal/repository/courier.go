@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Quasar777/courier-service/internal/model"
+	"github.com/Quasar777/courier-service/internal/model/courier"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
