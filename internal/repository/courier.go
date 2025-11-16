@@ -123,18 +123,29 @@ func (r *CourierRepository) Update(ctx context.Context, courier *model.UpdateCou
 		return fmt.Errorf("database error: %w", err)
 	}
 
+	missingFields := 0
+	
 	if courier.Name == "" {
 		courier.Name = nameDB
+		missingFields++
 	}
 	if courier.Lastname == "" {
 		courier.Lastname = lastnameDB
+		missingFields++
 	}
 	if courier.Phone == "" {
 		courier.Phone = phoneDB
+		missingFields++
 	}
 	if courier.Status == "" {
 		courier.Status = statusDB
+		missingFields++
 	}
+
+	if missingFields == 4 {
+		return model.ErrMissingRequiredFields
+	}
+
 
 	result, err := r.pool.Exec(ctx, `
 		UPDATE couriers

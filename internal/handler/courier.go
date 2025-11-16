@@ -71,9 +71,9 @@ func (c *CourierController) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case model.ErrMissingRequiredFields:
-			http.Error(w, `{"error": "missing required fields"}`, http.StatusBadRequest)
+			http.Error(w, `{"error": "Missing required fields"}`, http.StatusBadRequest)
 		case model.ErrPhoneConflict:
-			http.Error(w, `{"error": "courier with this phone is already exists"}`, http.StatusConflict)
+			http.Error(w, `{"error": "Courier with this phone is already exists"}`, http.StatusConflict)
 		default:
 			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
 		}
@@ -102,9 +102,9 @@ func (c *CourierController) Update(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case model.ErrMissingRequiredFields:
-			http.Error(w, `{"error": "missing required fields"}`, http.StatusBadRequest)
+			http.Error(w, `{"error": "Missing required fields"}`, http.StatusBadRequest)
 		case model.ErrPhoneConflict:
-			http.Error(w, `{"error": "courier with this phone is already exists"}`, http.StatusConflict)
+			http.Error(w, `{"error": "Courier with this phone is already exists"}`, http.StatusConflict)
 		default:
 			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
 		}
