@@ -11,6 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// TODO: исправить Create метод: нужно пробросить все необходимые поля
+
 type CourierRepository struct {
 	pool *pgxpool.Pool
 }
@@ -100,53 +102,6 @@ func (r *CourierRepository) Create(ctx context.Context, courier *model.CreateCou
 }
 
 func (r *CourierRepository) Update(ctx context.Context, courier *model.UpdateCourierRequest) error {
-	nameDB := courier.Name
-	lastnameDB := courier.Lastname
-	phoneDB := courier.Phone
-	statusDB := courier.Status
-
-	err := r.pool.QueryRow(ctx, `
-		SELECT name, lastname, phone, status
-		FROM couriers
-		WHERE id = $1
-	`, courier.Id).Scan(
-		&nameDB,
-		&lastnameDB,
-		&phoneDB,
-		&statusDB,
-	)
-
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return model.ErrCourierNotFound
-		}
-		return fmt.Errorf("database error: %w", err)
-	}
-
-	missingFields := 0
-	
-	if courier.Name == "" {
-		courier.Name = nameDB
-		missingFields++
-	}
-	if courier.Lastname == "" {
-		courier.Lastname = lastnameDB
-		missingFields++
-	}
-	if courier.Phone == "" {
-		courier.Phone = phoneDB
-		missingFields++
-	}
-	if courier.Status == "" {
-		courier.Status = statusDB
-		missingFields++
-	}
-
-	if missingFields == 4 {
-		return model.ErrMissingRequiredFields
-	}
-
-
 	result, err := r.pool.Exec(ctx, `
 		UPDATE couriers
 		SET name = $1, lastname = $2, phone = $3, status = $4

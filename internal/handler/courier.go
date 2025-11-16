@@ -42,9 +42,7 @@ func (c *CourierController) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(courier)
+	c.writeJSON(w, http.StatusOK, courier)
 }
 
 
@@ -55,9 +53,7 @@ func (c *CourierController) GetMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(couriers)
+	c.writeJSON(w, http.StatusOK, couriers)
 }
 
 func (c *CourierController) Create(w http.ResponseWriter, r *http.Request) {
@@ -85,9 +81,7 @@ func (c *CourierController) Create(w http.ResponseWriter, r *http.Request) {
 		"message": "Courier created succesfully",
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
+	c.writeJSON(w, http.StatusCreated, response)
 }
 
 func (c *CourierController) Update(w http.ResponseWriter, r *http.Request) {
@@ -96,11 +90,17 @@ func (c *CourierController) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Invalid JSON}`, http.StatusBadRequest)
 		return
 	}
+	if reqCourier.Id == 0 {
+		http.Error(w, `{"error": "Id is required"}`, http.StatusBadRequest)
+		return
+	}
 
 	err := c.useCase.UpdateCourier(r.Context(), reqCourier)
 
 	if err != nil {
 		switch err {
+		case model.ErrCourierNotFound:
+			http.Error(w, `{"error": "Courier not found"}`, http.StatusNotFound)
 		case model.ErrMissingRequiredFields:
 			http.Error(w, `{"error": "Missing required fields"}`, http.StatusBadRequest)
 		case model.ErrPhoneConflict:
@@ -115,9 +115,7 @@ func (c *CourierController) Update(w http.ResponseWriter, r *http.Request) {
 		"message": "Profile updated successfully",
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	c.writeJSON(w, http.StatusOK, response)
 }
 
 func (c *CourierController) Delete(w http.ResponseWriter, r *http.Request) {
@@ -142,7 +140,13 @@ func (c *CourierController) Delete(w http.ResponseWriter, r *http.Request) {
 		"message": "Courier deleted successfully",
 	}
 
+	c.writeJSON(w, http.StatusOK, response)
+}
+
+func (c *CourierController) writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		http.Error(w, `{"error": "Failed to encode response"}`, http.StatusInternalServerError)
+	}
 }
