@@ -48,7 +48,7 @@ func main() {
 	courier := handler.NewCourierController(courierUseCase)
 
 	deliveryRepository := repository.NewDeliveryRepository(pool)
-	deliveryUseCase := usecase.NewDeliveryUseCase(deliveryRepository)
+	deliveryUseCase := usecase.NewDeliveryUseCase(deliveryRepository, courierRepository)
 	delivery := handler.NewDeliveryController(deliveryUseCase)
 	
 	srv := &http.Server{

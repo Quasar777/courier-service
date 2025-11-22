@@ -7,17 +7,25 @@ import (
 )
 
 type DeliveryUseCase struct {
-	repository DeliveryRepository
+	DeliveryRepo DeliveryRepository
+	CourierRepo CourierRepository
 }
 
-func NewDeliveryUseCase(r DeliveryRepository) *DeliveryUseCase {
-	return &DeliveryUseCase{repository: r}
+func NewDeliveryUseCase(deliveryRepo DeliveryRepository, courierRepo CourierRepository) *DeliveryUseCase {
+	return &DeliveryUseCase{
+		DeliveryRepo: deliveryRepo,
+		CourierRepo: courierRepo,
+	}
 }
 
 func (u *DeliveryUseCase) AssignCourier(ctx context.Context, orderId model.AssignDeliveryRequest) (model.AssignedDeliveryResponse, error) {
+	
+
+
 	return model.AssignedDeliveryResponse{}, nil
 }
 
 func (u *DeliveryUseCase) 	UnAssignCourier(ctx context.Context, orderId model.UnAssignDeliveryRequest) (model.UnAssignedDeliveryResponse, error) {
 	return model.UnAssignedDeliveryResponse{}, nil
 }
+
