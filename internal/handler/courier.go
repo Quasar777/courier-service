@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Quasar777/courier-service/internal/model/courier"
+	"github.com/Quasar777/courier-service/internal/model"
 
 	"github.com/go-chi/chi/v5"
 )

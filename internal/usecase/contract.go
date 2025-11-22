@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 
-	"github.com/Quasar777/courier-service/internal/model/courier"
+	"github.com/Quasar777/courier-service/internal/model"
 )
 
 type CourierRepository interface {
