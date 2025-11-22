@@ -24,7 +24,7 @@ func NewCourierRepository(pool *pgxpool.Pool) *CourierRepository {
 func (r *CourierRepository) GetOneById(ctx context.Context, id int) (*model.Courier, error) {
 	var courier model.Courier
 	err := r.pool.QueryRow(ctx,`
-		SELECT id, name, lastname, phone, status 
+		SELECT id, name, lastname, phone, status, transport_type
 		FROM couriers 
 		WHERE id = $1
 		`, id).Scan(
@@ -33,6 +33,7 @@ func (r *CourierRepository) GetOneById(ctx context.Context, id int) (*model.Cour
 		&courier.Lastname, 
 		&courier.Phone, 
 		&courier.Status,
+		&courier.TransportType,
 	)
 
 	if err != nil {
@@ -47,7 +48,7 @@ func (r *CourierRepository) GetOneById(ctx context.Context, id int) (*model.Cour
 
 func (r *CourierRepository) GetAll(ctx context.Context) ([]model.Courier, error) {
 	rows, err := r.pool.Query(ctx,`
-		SELECT id, name, lastname, phone, status 
+		SELECT id, name, lastname, phone, status, transport_type
 		FROM couriers
 		ORDER BY id
 	`)
@@ -65,6 +66,7 @@ func (r *CourierRepository) GetAll(ctx context.Context) ([]model.Courier, error)
 			&courier.Lastname, 
 			&courier.Phone, 
 			&courier.Status,
+			&courier.TransportType,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error reading data: %w", err)
@@ -86,10 +88,10 @@ func (r *CourierRepository) GetAll(ctx context.Context) ([]model.Courier, error)
 func (r *CourierRepository) Create(ctx context.Context, courier *model.CreateCourierRequest) (int, error) {
 	var id int
 	err := r.pool.QueryRow(ctx, `
-		INSERT INTO couriers (name, lastname, phone, status) 
-		VALUES ($1, $2, $3, $4) 
+		INSERT INTO couriers (name, lastname, phone, status, transport_type) 
+		VALUES ($1, $2, $3, $4, $5) 
 		RETURNING id
-	`, courier.Name, courier.Lastname, courier.Phone, courier.Status).Scan(&id)
+	`, courier.Name, courier.Lastname, courier.Phone, courier.Status, courier.TransportType).Scan(&id)
 
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {
@@ -104,9 +106,14 @@ func (r *CourierRepository) Create(ctx context.Context, courier *model.CreateCou
 func (r *CourierRepository) Update(ctx context.Context, courier *model.UpdateCourierRequest) error {
 	result, err := r.pool.Exec(ctx, `
 		UPDATE couriers
-		SET name = $1, lastname = $2, phone = $3, status = $4
-		WHERE id = $5
-	`, courier.Name, courier.Lastname, courier.Phone, courier.Status, courier.Id)
+		SET name = $1, lastname = $2, phone = $3, status = $4, transport_type = $5
+		WHERE id = $6
+	`,  courier.Name, 
+	    courier.Lastname, 
+	    courier.Phone, 
+	    courier.Status, 
+		courier.TransportType,
+		courier.Id,)
 
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {

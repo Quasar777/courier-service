@@ -112,7 +112,7 @@ func (c *CourierController) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]string {
-		"message": "Profile updated successfully",
+		"message": "Courier updated successfully",
 	}
 
 	c.writeJSON(w, http.StatusOK, response)

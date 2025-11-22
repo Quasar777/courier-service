@@ -32,12 +32,16 @@ func (u *CourierUseCase) CreateCourier(ctx context.Context, req model.CreateCour
 	if req.Status == "" {
 		req.Status = "available"
 	}
+
+	if req.TransportType == "" {
+		req.TransportType = "on_foot"
+	}
 	
 	return u.repository.Create(ctx, &req)
 }
 
 func (u *CourierUseCase) UpdateCourier(ctx context.Context, req model.UpdateCourierRequest) error {
-	if req.Name == "" && req.Lastname == "" && req.Phone == "" && req.Status == "" {
+	if req.Name == "" && req.Lastname == "" && req.Phone == "" && req.Status == "" && req.TransportType == "" {
         return model.ErrMissingRequiredFields
     }
 
@@ -57,6 +61,9 @@ func (u *CourierUseCase) UpdateCourier(ctx context.Context, req model.UpdateCour
 	}
 	if req.Status == "" {
 		req.Status = existingCourier.Status
+	}
+	if req.TransportType == "" {
+		req.TransportType = existingCourier.TransportType
 	}
  
 	return u.repository.Update(ctx, &req)
