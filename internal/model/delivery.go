@@ -21,6 +21,14 @@ type UpdateDeliveryRequest struct {
 	Deadline  time.Time `json:"deadline"`
 }
 
+type AssignDeliveryRequest struct {
+	OrderId int `json:"orderId"`
+}
+
+type UnAssignDeliveryRequest struct {
+	OrderId int `json:"orderId"`
+}
+
 type AssignedDeliveryResponse struct {
 	CourierId     int       `json:"courierId"`
 	OrderId       int       `json:"orderId"`

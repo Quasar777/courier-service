@@ -30,7 +30,6 @@ func main() {
 		log.Fatal("error when loading .env file:", err)
 	}
 
-	// Port resolving
 	port := getEnv("SERVER_PORT", defaultPort)
 	flagPort := flag.String("port", port, "specifying a port")
 	flag.Parse()
@@ -38,25 +37,25 @@ func main() {
 		port = *flagPort
 	}
 
-	// DB init
 	pool, err := mustInitPool(context.Background())
     if err != nil {
         log.Fatal("error connecting to database: ", err)
     }
     defer pool.Close()
 
-	// Dependency Injection
 	courierRepository := repository.NewCourierRepository(pool)
 	courierUseCase := usecase.NewCourierUseCase(courierRepository)
 	courier := handler.NewCourierController(courierUseCase)
+
+	deliveryRepository := repository.NewDeliveryRepository(pool)
+	deliveryUseCase := usecase.NewDeliveryUseCase(deliveryRepository)
+	delivery := handler.NewDeliveryController(deliveryUseCase)
 	
-	// Setup HTTP server
 	srv := &http.Server{
 		Addr: fmt.Sprintf(":%v", port),
-		Handler: initRouter(courier),
+		Handler: initRouter(courier, delivery),
 	}
 
-	// Graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	
@@ -80,7 +79,7 @@ func main() {
 	}
 }
 
-func initRouter(courier *handler.CourierController) *chi.Mux {
+func initRouter(courier *handler.CourierController, delivery *handler.DeliveryController) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Get("/courier/{id}", courier.Get)
@@ -88,6 +87,9 @@ func initRouter(courier *handler.CourierController) *chi.Mux {
 	r.Post("/couriers", courier.Create)
 	r.Put("/courier", courier.Update)
 	r.Delete("/courier/{id}", courier.Delete)
+
+	r.Post("/delivery/assign", delivery.Assign)
+	r.Post("/delivery/unassign", delivery.Unassign)
 
 	return r
 }

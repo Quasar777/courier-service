@@ -11,8 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// TODO: исправить Create метод: нужно пробросить все необходимые поля
-
 type CourierRepository struct {
 	pool *pgxpool.Pool
 }
