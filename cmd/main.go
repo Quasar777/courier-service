@@ -25,7 +25,6 @@ const (
 )
 
 func main() {
-	// env file loading and flags parsing
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("error when loading .env file:", err)

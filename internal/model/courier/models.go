@@ -12,8 +12,6 @@ type Courier struct {
 	UpdatedAt time.Time `json:"-"`
 }
 
-// DTOs
-
 type CreateCourierRequest struct {
 	Name     string `json:"name"`
 	Lastname string `json:"lastname"`
