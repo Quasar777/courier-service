@@ -15,6 +15,6 @@ type CourierRepository interface {
 }
 
 type DeliveryRepository interface {
-	Assign(ctx context.Context, orderId model.AssignDeliveryRequest) (model.AssignedDeliveryResponse, error)
-	UnAssign(ctx context.Context, orderId model.UnAssignDeliveryRequest) (model.UnAssignedDeliveryResponse, error) 
+	Assign(ctx context.Context, req model.AssignedDeliveryResponse) (int, error)
+	UnAssign(ctx context.Context, req *model.UnAssignDeliveryRequest) (*model.UnAssignedDeliveryResponse, error) 
 }

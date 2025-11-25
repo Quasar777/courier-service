@@ -93,8 +93,10 @@ func (r *CourierRepository) Create(ctx context.Context, courier *model.CreateCou
 
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {
+			fmt.Println(err)
 			return 0, model.ErrPhoneConflict
 		}
+		fmt.Println(err)
 		return 0, fmt.Errorf("database error: %w", err)
 	}
 
