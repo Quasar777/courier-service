@@ -29,7 +29,12 @@ func (c *DeliveryController) Assign(w http.ResponseWriter, r *http.Request) {
 
 	response, err := c.useCase.AssignCourier(r.Context(), req)
 	if err != nil {
-		http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
+		switch err {
+		case model.ErrNoAvailableCouriers:
+			http.Error(w, `{"error": "No available couriers"}`, http.StatusConflict)
+		default:
+			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
+		}
 		return
 	}
 

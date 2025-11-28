@@ -37,6 +37,10 @@ func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req model.AssignDel
 		}
 	}
 
+	if len(availableCouriers) == 0 {
+		return nil, model.ErrNoAvailableCouriers
+	}
+
 	result.CourierId = pickRandomCourierId(availableCouriers)
 	result.OrderId = req.OrderId
 

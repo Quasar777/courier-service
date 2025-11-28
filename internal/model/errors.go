@@ -7,6 +7,7 @@ var (
 
 	ErrCourierNotFound = errors.New("courier not found")
 	ErrPhoneConflict   = errors.New("courier with this phone number is already exists")
-	
-	ErrDeliveryNotFound = errors.New("delivery not found")
+
+	ErrDeliveryNotFound    = errors.New("delivery not found")
+	ErrNoAvailableCouriers = errors.New("no available couriers")
 )
