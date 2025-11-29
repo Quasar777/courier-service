@@ -16,5 +16,5 @@ type CourierUseCase interface {
 
 type DeliveryUseCase interface {
 	AssignCourier(ctx context.Context, req model.AssignDeliveryRequest) (*model.AssignedDeliveryResponse, error)
-	UnAssignCourier(ctx context.Context, req *model.UnAssignDeliveryRequest) (*model.UnAssignedDeliveryResponse, error) 
+	UnassignCourier(ctx context.Context, req model.UnassignDeliveryRequest) (*model.UnassignedDeliveryResponse, error) 
 }

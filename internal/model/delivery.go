@@ -25,7 +25,7 @@ type AssignDeliveryRequest struct {
 	OrderId string `json:"orderId"`
 }
 
-type UnAssignDeliveryRequest struct {
+type UnassignDeliveryRequest struct {
 	OrderId string `json:"orderId"`
 }
 
@@ -36,7 +36,7 @@ type AssignedDeliveryResponse struct {
 	Deadline      time.Time `json:"deadline"`
 }
 
-type UnAssignedDeliveryResponse struct {
+type UnassignedDeliveryResponse struct {
 	OrderId   string `json:"orderId"`
 	CourierId int    `json:"courierId"`
 	Status    string `json:"status"`

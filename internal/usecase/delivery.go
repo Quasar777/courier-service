@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -60,8 +61,22 @@ func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req model.AssignDel
 	return &result, nil
 }
 
-func (u *DeliveryUseCase) UnAssignCourier(ctx context.Context, req *model.UnAssignDeliveryRequest) (*model.UnAssignedDeliveryResponse, error) {
-	return nil, nil
+func (u *DeliveryUseCase) UnassignCourier(ctx context.Context, req model.UnassignDeliveryRequest) (*model.UnassignedDeliveryResponse, error) {
+	result := model.UnassignedDeliveryResponse{
+		OrderId: req.OrderId,
+	}
+
+	d, err := u.DeliveryRepo.UnassignWithUpdate(ctx, req.OrderId)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	
+
+	result.CourierId = d.CourierId
+	result.Status = "unassigned"
+
+	return &result, nil
 }
 
 

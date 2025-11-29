@@ -10,4 +10,5 @@ var (
 
 	ErrDeliveryNotFound    = errors.New("delivery not found")
 	ErrNoAvailableCouriers = errors.New("no available couriers")
+	ErrNoRelationFound     = errors.New("realtion between courier and delivery not found")
 )

@@ -42,13 +42,29 @@ func (c *DeliveryController) Assign(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *DeliveryController) Unassign(w http.ResponseWriter, r *http.Request) {
-	var req model.UnAssignDeliveryRequest 
+	var req model.UnassignDeliveryRequest 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error": "Invalid JSON}`, http.StatusBadRequest)
 		return
 	}
 
-	c.writeJSON(w, 228, map[string]string{"message": "pong from unassign"})
+	if req.OrderId == "" {
+		http.Error(w, `{"error": "Missing orderId"}`,  http.StatusBadRequest)
+		return
+	}
+
+	response, err := c.useCase.UnassignCourier(r.Context(), req)
+	if err != nil {
+		switch err {
+		case model.ErrNoRelationFound:
+			http.Error(w, `{"error": "Delivery not found"}`, http.StatusNotFound)
+		default:
+			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
+		}
+		return
+	}
+
+	c.writeJSON(w, http.StatusOK, response)
 }
 
 
