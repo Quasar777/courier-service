@@ -49,24 +49,10 @@ func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req model.AssignDel
 		return nil, err
 	}
 
-	reqUpdateCourierStatus := &model.UpdateCourierRequest{
-		Id: result.CourierId,
-		Name: assignedCourier.Name,
-		Lastname: assignedCourier.Lastname,
-		Phone: assignedCourier.Phone,
-		Status: "busy",
-		TransportType: assignedCourier.TransportType,
-	}
-
-	err = u.CourierRepo.Update(ctx, reqUpdateCourierStatus)
-	if err != nil {
-		return nil, err
-	}
-
 	result.TransportType = assignedCourier.TransportType
 	result.Deadline = u.DeadlineFactory.Deadline(time.Now(), result.TransportType)
 
-	_, err = u.DeliveryRepo.Assign(ctx, result)
+	_, err = u.DeliveryRepo.AssignCourierWithUpdate(ctx, result.CourierId, result.OrderId, result.Deadline)
 	if err != nil {
 		return nil, err
 	}

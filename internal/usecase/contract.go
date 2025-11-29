@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/Quasar777/courier-service/internal/model"
 )
@@ -15,6 +16,6 @@ type CourierRepository interface {
 }
 
 type DeliveryRepository interface {
-	Assign(ctx context.Context, req model.AssignedDeliveryResponse) (int, error)
+	AssignCourierWithUpdate(ctx context.Context, courierId int, orderId string, deadline time.Time) (*model.Delivery, error)
 	UnAssign(ctx context.Context, req *model.UnAssignDeliveryRequest) (*model.UnAssignedDeliveryResponse, error) 
 }
