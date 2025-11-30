@@ -19,4 +19,5 @@ type DeliveryRepository interface {
 	AssignCourierWithUpdate(ctx context.Context, courierId int, orderId string, deadline time.Time) (*model.Delivery, error)
 	UnassignWithUpdate(ctx context.Context, orderId string) (*model.Delivery, error)
 	ReleaseCouriers(ctx context.Context) error
+	GetCourierIdWithFewestOrders(ctx context.Context) (int, error)
 }

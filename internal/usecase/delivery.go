@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/Quasar777/courier-service/internal/model"
@@ -26,23 +25,12 @@ func NewDeliveryUseCase(deliveryRepo DeliveryRepository, courierRepo CourierRepo
 func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req model.AssignDeliveryRequest) (*model.AssignedDeliveryResponse, error) {
 	result := model.AssignedDeliveryResponse{}
 
-	allCouriers, err := u.CourierRepo.GetAll(ctx)
+	id, err := u.DeliveryRepo.GetCourierIdWithFewestOrders(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	availableCouriers := make([]model.Courier, 0)
-	for _, courier := range allCouriers {
-		if courier.Status == "available" {
-			availableCouriers = append(availableCouriers, courier)
-		}
-	}
-
-	if len(availableCouriers) == 0 {
-		return nil, model.ErrNoAvailableCouriers
-	}
-
-	result.CourierId = pickRandomCourierId(availableCouriers)
+	result.CourierId = id
 	result.OrderId = req.OrderId
 
 	assignedCourier, err := u.CourierRepo.GetOneById(ctx, result.CourierId)
@@ -101,14 +89,4 @@ func (u *DeliveryUseCase) RunDeliveryChecker(ctx context.Context, interval time.
 
 func (u *DeliveryUseCase) ReleaseExpiredDeliveries(ctx context.Context) error {
     return u.DeliveryRepo.ReleaseCouriers(ctx)
-}
-
-
-func pickRandomCourierId(couriers []model.Courier) int {
-	ids := []int{}
-	for _, courier := range couriers {
-		ids = append(ids, courier.Id)
-	}
-
-	return ids[rand.Intn(len(ids))]
 }
