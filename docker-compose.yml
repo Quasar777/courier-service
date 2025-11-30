@@ -5,6 +5,7 @@ services:
     image: postgres:15            # Официальный образ PostgreSQL
     container_name: courier-service-postgres   # Имя контейнера
     environment:
+      TZ: Europe/Moscow                        # Часовой пояс внутри контейнера
       POSTGRES_USER: ${POSTGRES_USER}          # Имя пользователя БД (берем из .env)
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # Пароль (берем из .env)
       POSTGRES_DB: ${POSTGRES_DB}              # База данных, создаваемая при запуске (берем из .env)
