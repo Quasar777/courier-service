@@ -28,7 +28,7 @@ func (r *DeliveryRepository) AssignCourierWithUpdate(ctx context.Context, courie
 
 	_, err = tx.Exec(ctx, `
 		UPDATE couriers
-		SET status = 'paused'
+		SET status = 'busy'
 		WHERE id = $1
 	`, courierId)
 	

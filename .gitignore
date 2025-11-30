@@ -1,5 +1,3 @@
 /edu
 
 *.env
-
-*.DS_Store
