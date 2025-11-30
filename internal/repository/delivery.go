@@ -111,7 +111,7 @@ func (r *DeliveryRepository) UnassignWithUpdate(ctx context.Context, orderId str
 }
 
 func (r *DeliveryRepository) ReleaseCouriers(ctx context.Context) error {
-	 tag, err := r.pool.Exec(ctx, `
+	 _, err := r.pool.Exec(ctx, `
 		UPDATE couriers 
 		SET status = 'available'
 		WHERE id IN (
@@ -120,8 +120,6 @@ func (r *DeliveryRepository) ReleaseCouriers(ctx context.Context) error {
 			WHERE deadline < NOW()
 		) AND status = 'busy'
 	`)
-
-	fmt.Printf("ReleaseCouriers updated rows: %d\n", tag.RowsAffected())
 
 	if err != nil {
 		return fmt.Errorf("database error: %w", err)

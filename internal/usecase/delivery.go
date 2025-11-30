@@ -77,7 +77,6 @@ func (u *DeliveryUseCase) RunDeliveryChecker(ctx context.Context, interval time.
 			fmt.Println("stopping ticker")
 			return
 		case <-ticker.C:
-			fmt.Println("test tick")
 			err := u.ReleaseExpiredDeliveries(ctx)
 			if err != nil {
 				fmt.Println("failed to release expired deliveries:", err)
