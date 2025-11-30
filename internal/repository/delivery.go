@@ -28,7 +28,7 @@ func (r *DeliveryRepository) AssignCourierWithUpdate(ctx context.Context, courie
 
 	_, err = tx.Exec(ctx, `
 		UPDATE couriers
-		SET status = 'paused'
+		SET status = 'busy'
 		WHERE id = $1
 	`, courierId)
 	
@@ -108,4 +108,24 @@ func (r *DeliveryRepository) UnassignWithUpdate(ctx context.Context, orderId str
     }
 
 	return d, nil
+}
+
+func (r *DeliveryRepository) ReleaseCouriers(ctx context.Context) error {
+	 tag, err := r.pool.Exec(ctx, `
+		UPDATE couriers 
+		SET status = 'available'
+		WHERE id IN (
+			SELECT courier_id 
+			FROM delivery
+			WHERE deadline < NOW()
+		) AND status = 'busy'
+	`)
+
+	fmt.Printf("ReleaseCouriers updated rows: %d\n", tag.RowsAffected())
+
+	if err != nil {
+		return fmt.Errorf("database error: %w", err)
+	}
+
+	return nil
 }

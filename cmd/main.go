@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -59,13 +60,24 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
-	
+
 	go func() {
 		log.Println("starting courier-service on port", port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server starting failed: %v", err)
 		}
 	}() 
+
+	go func() {
+		intervalSec, err := strconv.Atoi(getEnv("DELIVERY_CHECKER_INTERVAL", "10"))
+		if err != nil {
+			intervalSec = 10
+		}
+		
+		interval := time.Duration(intervalSec) * time.Second
+		
+		deliveryUseCase.RunDeliveryChecker(ctx, interval)
+	}()
 	
 	<-ctx.Done()
 

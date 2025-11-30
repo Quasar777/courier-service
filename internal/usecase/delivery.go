@@ -79,6 +79,30 @@ func (u *DeliveryUseCase) UnassignCourier(ctx context.Context, req model.Unassig
 	return &result, nil
 }
 
+func (u *DeliveryUseCase) RunDeliveryChecker(ctx context.Context, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("stopping ticker")
+			return
+		case <-ticker.C:
+			fmt.Println("test tick")
+			err := u.ReleaseExpiredDeliveries(ctx)
+			if err != nil {
+				fmt.Println("failed to release expired deliveries:", err)
+				return
+			}
+		}
+	}
+}
+
+func (u *DeliveryUseCase) ReleaseExpiredDeliveries(ctx context.Context) error {
+    return u.DeliveryRepo.ReleaseCouriers(ctx)
+}
+
 
 func pickRandomCourierId(couriers []model.Courier) int {
 	ids := []int{}
