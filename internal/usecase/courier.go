@@ -17,6 +17,10 @@ func NewCourierUseCase(r CourierRepository) *CourierUseCase {
 }
 
 func (u *CourierUseCase) GetCourier(ctx context.Context, id int) (*model.Courier, error) {
+	if id <= 0 {
+		return nil, model.ErrInvalidId
+	}
+
 	return u.repository.GetOneById(ctx, id)
 }
 

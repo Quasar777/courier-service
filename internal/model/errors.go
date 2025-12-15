@@ -4,6 +4,7 @@ import "errors"
 
 var (
 	ErrMissingRequiredFields = errors.New("missing required fields")
+	ErrInvalidId = errors.New("invalid id")
 
 	ErrCourierNotFound = errors.New("courier not found")
 	ErrPhoneConflict   = errors.New("courier with this phone number is already exists")
