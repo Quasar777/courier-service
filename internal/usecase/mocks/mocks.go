@@ -190,3 +190,40 @@ func (mr *MockDeliveryRepositoryMockRecorder) UnassignWithUpdate(ctx, orderId in
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnassignWithUpdate", reflect.TypeOf((*MockDeliveryRepository)(nil).UnassignWithUpdate), ctx, orderId)
 }
+
+// MockIDeadlineFactory is a mock of IDeadlineFactory interface.
+type MockIDeadlineFactory struct {
+	ctrl     *gomock.Controller
+	recorder *MockIDeadlineFactoryMockRecorder
+}
+
+// MockIDeadlineFactoryMockRecorder is the mock recorder for MockIDeadlineFactory.
+type MockIDeadlineFactoryMockRecorder struct {
+	mock *MockIDeadlineFactory
+}
+
+// NewMockIDeadlineFactory creates a new mock instance.
+func NewMockIDeadlineFactory(ctrl *gomock.Controller) *MockIDeadlineFactory {
+	mock := &MockIDeadlineFactory{ctrl: ctrl}
+	mock.recorder = &MockIDeadlineFactoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockIDeadlineFactory) EXPECT() *MockIDeadlineFactoryMockRecorder {
+	return m.recorder
+}
+
+// Deadline mocks base method.
+func (m *MockIDeadlineFactory) Deadline(now time.Time, transportType string) time.Time {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Deadline", now, transportType)
+	ret0, _ := ret[0].(time.Time)
+	return ret0
+}
+
+// Deadline indicates an expected call of Deadline.
+func (mr *MockIDeadlineFactoryMockRecorder) Deadline(now, transportType interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deadline", reflect.TypeOf((*MockIDeadlineFactory)(nil).Deadline), now, transportType)
+}

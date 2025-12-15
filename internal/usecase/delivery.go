@@ -11,10 +11,10 @@ import (
 type DeliveryUseCase struct {
 	DeliveryRepo DeliveryRepository
 	CourierRepo CourierRepository
-	DeadlineFactory DeadlineFactory
+	DeadlineFactory IDeadlineFactory
 }
 
-func NewDeliveryUseCase(deliveryRepo DeliveryRepository, courierRepo CourierRepository, deadlineFactory DeadlineFactory) *DeliveryUseCase {
+func NewDeliveryUseCase(deliveryRepo DeliveryRepository, courierRepo CourierRepository, deadlineFactory IDeadlineFactory) *DeliveryUseCase {
 	return &DeliveryUseCase{
 		DeliveryRepo: deliveryRepo,
 		CourierRepo: courierRepo,
@@ -60,7 +60,6 @@ func (u *DeliveryUseCase) UnassignCourier(ctx context.Context, req model.Unassig
 		return nil, err
 	}
 	
-
 	result.CourierId = d.CourierId
 	result.Status = "unassigned"
 

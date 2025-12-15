@@ -21,3 +21,7 @@ type DeliveryRepository interface {
 	ReleaseCouriers(ctx context.Context) error
 	GetCourierIdWithFewestOrders(ctx context.Context) (int, error)
 }
+
+type IDeadlineFactory interface {
+	Deadline(now time.Time, transportType string) time.Time
+}
