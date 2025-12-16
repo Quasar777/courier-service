@@ -50,7 +50,7 @@ func main() {
 
 	deadlineFactory := usecase.NewDeadlineFactory()
 	deliveryRepository := repository.NewDeliveryRepository(pool)
-	deliveryUseCase := usecase.NewDeliveryUseCase(deliveryRepository, courierRepository, *deadlineFactory)
+	deliveryUseCase := usecase.NewDeliveryUseCase(deliveryRepository, courierRepository, deadlineFactory)
 	delivery := handler.NewDeliveryController(deliveryUseCase)
 	
 	srv := &http.Server{
@@ -68,6 +68,7 @@ func main() {
 		}
 	}() 
 
+	// Delivery Checker
 	go func() {
 		intervalSec, err := strconv.Atoi(getEnv("DELIVERY_CHECKER_INTERVAL", "10"))
 		if err != nil {
