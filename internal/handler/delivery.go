@@ -44,7 +44,7 @@ func (c *DeliveryController) Assign(w http.ResponseWriter, r *http.Request) {
 func (c *DeliveryController) Unassign(w http.ResponseWriter, r *http.Request) {
 	var req model.UnassignDeliveryRequest 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error": "Invalid JSON}`, http.StatusBadRequest)
+		http.Error(w, `{"error": "Invalid JSON"}`, http.StatusBadRequest)
 		return
 	}
 
