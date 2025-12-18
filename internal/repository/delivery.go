@@ -26,7 +26,7 @@ func (r *DeliveryRepository) AssignCourierWithUpdate(ctx context.Context, courie
 	}
 	defer tx.Rollback(ctx)
 
-	_, err = tx.Exec(ctx, `
+	res, err := tx.Exec(ctx, `
 		UPDATE couriers
 		SET status = 'busy'
 		WHERE id = $1
@@ -34,6 +34,10 @@ func (r *DeliveryRepository) AssignCourierWithUpdate(ctx context.Context, courie
 	
 	if err != nil {
 		return nil, fmt.Errorf("database error: %w", err)
+	}
+
+	if res.RowsAffected() == 0 {
+		return nil, model.ErrCourierNotFound
 	}
 
     d := &model.Delivery{

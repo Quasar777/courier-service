@@ -3,7 +3,9 @@ package repository_test
 import (
 	"context"
 	"testing"
+	"time"
 
+	"github.com/Quasar777/courier-service/internal/model"
 	"github.com/Quasar777/courier-service/internal/repository"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -28,12 +30,291 @@ func (s *DeliveryRepositoryTestSuite) SetupSuite() {
 	s.repo = repository.NewDeliveryRepository(s.pool)
 }
 
+func (s *DeliveryRepositoryTestSuite) TestAssign_Success() {
+	ctx := context.Background()
+
+	courierID := s.couriersID[0]
+	orderID := "order-1"
+	deadline := time.Now().Add(30 * time.Minute)
+
+	d, err := s.repo.AssignCourierWithUpdate(ctx, courierID, orderID, deadline)
+
+	s.Require().NoError(err)
+	s.Require().NotNil(d)
+	s.Greater(d.Id, 0)
+	s.Equal(courierID, d.CourierId)
+	s.Equal(orderID, d.OrderId)
+
+	// 1) Проверяем, что запись реально в delivery
+	var (
+		dbID       int
+		dbCourier  int
+		dbOrderID  string
+		dbAssigned time.Time
+		dbDeadline time.Time
+	)
+	err = s.pool.QueryRow(ctx, `
+		SELECT id, courier_id, order_id, assigned_at, deadline
+		FROM delivery
+		WHERE id = $1
+	`, d.Id).Scan(&dbID, &dbCourier, &dbOrderID, &dbAssigned, &dbDeadline)
+	s.Require().NoError(err)
+
+	s.Equal(d.Id, dbID)
+	s.Equal(courierID, dbCourier)
+	s.Equal(orderID, dbOrderID)
+
+	// сравнение "как записано" без учета TZ
+	s.Equal(d.Deadline.Format("2006-01-02 15:04:05"), dbDeadline.Format("2006-01-02 15:04:05"))
+
+
+	// 2) Проверяем, что у курьера статус стал busy
+	var status string
+	err = s.pool.QueryRow(ctx, `
+		SELECT status
+		FROM couriers
+		WHERE id = $1
+	`, courierID).Scan(&status)
+	s.Require().NoError(err)
+	s.Equal("busy", status)
+}
+
+func (s *DeliveryRepositoryTestSuite) TestAssign_CourierNotFound() {
+	ctx := context.Background()
+
+	nonExistingCourier := 999999999
+	orderID := "order-no-courier"
+	deadline := time.Now().Add(30 * time.Minute)
+
+	d, err := s.repo.AssignCourierWithUpdate(ctx, nonExistingCourier, orderID, deadline)
+
+	s.Require().Error(err)
+	s.ErrorIs(err, model.ErrCourierNotFound)
+	s.Nil(d)
+}
+
+func (s *DeliveryRepositoryTestSuite) TestUnassign_Success() {
+	ctx := context.Background()
+
+	courierID := s.couriersID[0]
+	orderID := "order-unassign-1"
+	deadline := time.Now().Add(30 * time.Minute)
+
+	// Arrange: назначаем курьера (курьер станет busy, запись появится в delivery)
+	_, err := s.repo.AssignCourierWithUpdate(ctx, courierID, orderID, deadline)
+	s.Require().NoError(err)
+
+	// Доп. проверка: courier busy до unassign
+	var before string
+	err = s.pool.QueryRow(ctx, `SELECT status FROM couriers WHERE id = $1`, courierID).Scan(&before)
+	s.Require().NoError(err)
+	s.Equal("busy", before)
+
+	// Act: unassign
+	d, err := s.repo.UnassignWithUpdate(ctx, orderID)
+
+	// Assert: ошибок нет, вернули courier_id
+	s.Require().NoError(err)
+	s.Require().NotNil(d)
+	s.Equal(orderID, d.OrderId)
+	s.Equal(courierID, d.CourierId)
+
+	// 1) Запись из delivery удалена
+	var cnt int
+	err = s.pool.QueryRow(ctx, `SELECT COUNT(*) FROM delivery WHERE order_id = $1`, orderID).Scan(&cnt)
+	s.Require().NoError(err)
+	s.Equal(0, cnt)
+
+	// 2) Курьер снова available
+	var after string
+	err = s.pool.QueryRow(ctx, `SELECT status FROM couriers WHERE id = $1`, courierID).Scan(&after)
+	s.Require().NoError(err)
+	s.Equal("available", after)
+}
+
+func (s *DeliveryRepositoryTestSuite) TestUnassign_NoRelationFound() {
+	ctx := context.Background()
+
+	d, err := s.repo.UnassignWithUpdate(ctx, "order-does-not-exist")
+
+	s.Require().Error(err)
+	s.ErrorIs(err, model.ErrNoRelationFound)
+	s.Nil(d)
+}
+
+func (s *DeliveryRepositoryTestSuite) TestReleaseCouriers_ReleasesOnlyExpiredBusy() {
+	ctx := context.Background()
+
+	// Подготовка:
+	// courier1 busy + deadline в прошлом => должен стать available
+	// courier2 busy + deadline в будущем => должен остаться busy
+	// courier3 available + deadline в прошлом => должен остаться available
+
+	c1 := s.couriersID[0]
+	c2 := s.couriersID[1]
+	c3 := s.couriersID[2]
+
+	_, err := s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c1)
+	s.Require().NoError(err)
+	_, err = s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c2)
+	s.Require().NoError(err)
+
+	past := time.Now().Add(-2 * time.Hour)
+	future := time.Now().Add(2 * time.Hour)
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), $3)
+	`, c1, "order-expired", past)
+	s.Require().NoError(err)
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), $3)
+	`, c2, "order-active", future)
+	s.Require().NoError(err)
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), $3)
+	`, c3, "order-expired-available", past)
+	s.Require().NoError(err)
+
+	
+	err = s.repo.ReleaseCouriers(ctx)
+	s.Require().NoError(err)
+
+	
+	status := func(id int) string {
+		var st string
+		e := s.pool.QueryRow(ctx, `SELECT status FROM couriers WHERE id = $1`, id).Scan(&st)
+		s.Require().NoError(e)
+		return st
+	}
+
+	s.Equal("available", status(c1))
+	s.Equal("busy", status(c2))
+	s.Equal("available", status(c3))
+}
+
+func (s *DeliveryRepositoryTestSuite) TestReleaseCouriers_NoExpired_NoChanges() {
+	ctx := context.Background()
+
+	c1 := s.couriersID[0]
+	c2 := s.couriersID[1]
+
+	_, err := s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c1)
+	s.Require().NoError(err)
+	_, err = s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c2)
+	s.Require().NoError(err)
+
+	future := time.Now().Add(2 * time.Hour)
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), $3)
+	`, c1, "order-f1", future)
+	s.Require().NoError(err)
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), $3)
+	`, c2, "order-f2", future)
+	s.Require().NoError(err)
+
+	err = s.repo.ReleaseCouriers(ctx)
+	s.Require().NoError(err)
+
+	var st1, st2 string
+	s.Require().NoError(s.pool.QueryRow(ctx, `SELECT status FROM couriers WHERE id = $1`, c1).Scan(&st1))
+	s.Require().NoError(s.pool.QueryRow(ctx, `SELECT status FROM couriers WHERE id = $1`, c2).Scan(&st2))
+	s.Equal("busy", st1)
+	s.Equal("busy", st2)
+}
+
+func (s *DeliveryRepositoryTestSuite) TestGetCourierIdWithFewestOrders_Success() {
+	ctx := context.Background()
+
+	c1 := s.couriersID[0]
+	c2 := s.couriersID[1]
+	c3 := s.couriersID[2]
+
+	// c1: 2 заказа
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), NOW() + interval '1 hour'),
+		       ($1, $3, NOW(), NOW() + interval '1 hour')
+	`, c1, "order-c1-1", "order-c1-2")
+	s.Require().NoError(err)
+
+	// c2: 1 заказ
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), NOW() + interval '1 hour')
+	`, c2, "order-c2-1")
+	s.Require().NoError(err)
+
+	// c3: 0 заказов (ничего не вставляем) => должен быть выбран
+
+	id, err := s.repo.GetCourierIdWithFewestOrders(ctx)
+
+	s.Require().NoError(err)
+	s.Equal(c3, id)
+}
+
+func (s *DeliveryRepositoryTestSuite) TestGetCourierIdWithFewestOrders_IgnoresBusy() {
+	ctx := context.Background()
+
+	c1 := s.couriersID[0]
+	c2 := s.couriersID[1]
+	c3 := s.couriersID[2]
+
+	// Сделаем c3 busy (даже если у него 0 заказов, он должен игнорироваться)
+	_, err := s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c3)
+	s.Require().NoError(err)
+
+	// c1: 2 заказа
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), NOW() + interval '1 hour'),
+		       ($1, $3, NOW(), NOW() + interval '1 hour')
+	`, c1, "order1", "order2")
+	s.Require().NoError(err)
+
+	// c2: 1 заказ => должен быть выбран среди available (c3 игнорируем)
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), NOW() + interval '1 hour')
+	`, c2, "order3")
+	s.Require().NoError(err)
+
+	id, err := s.repo.GetCourierIdWithFewestOrders(ctx)
+
+	s.Require().NoError(err)
+	s.Equal(c2, id)
+}
+
+func (s *DeliveryRepositoryTestSuite) TestGetCourierIdWithFewestOrders_NoAvailable() {
+	ctx := context.Background()
+
+	// Все курьеры busy
+	_, err := s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy'`)
+	s.Require().NoError(err)
+
+	id, err := s.repo.GetCourierIdWithFewestOrders(ctx)
+
+	s.Require().Error(err)
+	s.ErrorIs(err, model.ErrNoAvailableCouriers)
+	s.Equal(0, id)
+}
+
+
 func (s *DeliveryRepositoryTestSuite) TearDownSuite() {
 	s.pool.Close()
 }
 
 func (s *DeliveryRepositoryTestSuite) SetupTest() {
-	s.couriersID = nil // важно: не копим между тестами
+	s.couriersID = nil
 	ctx := context.Background()
 
 	ids := make([]int, 0, 3)
