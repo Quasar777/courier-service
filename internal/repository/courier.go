@@ -92,11 +92,10 @@ func (r *CourierRepository) Create(ctx context.Context, courier *model.CreateCou
 	`, courier.Name, courier.Lastname, courier.Phone, courier.Status, courier.TransportType).Scan(&id)
 
 	if err != nil {
+		fmt.Printf("err type=%T err=%q\n", err, err.Error())
 		if strings.Contains(err.Error(), "duplicate key value") {
-			fmt.Println(err)
 			return 0, model.ErrPhoneConflict
 		}
-		fmt.Println(err)
 		return 0, fmt.Errorf("database error: %w", err)
 	}
 
