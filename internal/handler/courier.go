@@ -4,11 +4,13 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/Quasar777/courier-service/internal/handler/dto"
+	"github.com/Quasar777/courier-service/internal/handler/validation"
 	"github.com/Quasar777/courier-service/internal/model"
 
 	"github.com/go-chi/chi/v5"
@@ -64,16 +66,14 @@ func (c *CourierController) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := validation.ValidateRequest[dto.CreateCourierRequest](&reqCourier); err != nil {
+		responseErrorJSON(w, err)
+		return
+	}
+
 	id, err := c.useCase.CreateCourier(r.Context(), reqCourier)
 	if err != nil {
-		switch err {
-		case model.ErrMissingRequiredFields:
-			http.Error(w, `{"error": "Missing required fields"}`, http.StatusBadRequest)
-		case model.ErrPhoneConflict:
-			http.Error(w, `{"error": "Courier with this phone is already exists"}`, http.StatusConflict)
-		default:
-			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
-		}
+		responseErrorJSON(w, err)
 		return
 	}
 
@@ -86,29 +86,25 @@ func (c *CourierController) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *CourierController) Update(w http.ResponseWriter, r *http.Request) {
-	var reqCourier dto.UpdateCourierRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqCourier); err != nil {
+	var req dto.UpdateCourierRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error": "Invalid JSON"}`, http.StatusBadRequest)
 		return
 	}
-	if reqCourier.Id == 0 {
+	if req.Id == 0 {
 		http.Error(w, `{"error": "Id is required"}`, http.StatusBadRequest)
 		return
 	}
 
-	err := c.useCase.UpdateCourier(r.Context(), reqCourier)
+	if err := validation.ValidateRequest[dto.UpdateCourierRequest](&req); err != nil {
+		responseErrorJSON(w, err)
+		return
+	}
+
+	err := c.useCase.UpdateCourier(r.Context(), req)
 
 	if err != nil {
-		switch err {
-		case model.ErrCourierNotFound:
-			http.Error(w, `{"error": "Courier not found"}`, http.StatusNotFound)
-		case model.ErrMissingRequiredFields:
-			http.Error(w, `{"error": "Missing required fields"}`, http.StatusBadRequest)
-		case model.ErrPhoneConflict:
-			http.Error(w, `{"error": "Courier with this phone is already exists"}`, http.StatusConflict)
-		default:
-			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
-		}
+		responseErrorJSON(w, err)
 		return
 	}
 
@@ -149,5 +145,24 @@ func (c *CourierController) writeJSON(w http.ResponseWriter, status int, data in
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		http.Error(w, `{"error": "Failed to encode response"}`, http.StatusInternalServerError)
+	}
+}
+
+func responseErrorJSON(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, model.ErrMissingRequiredFields):
+		http.Error(w, `{"error": "Missing required fields"}`, http.StatusBadRequest)
+	case errors.Is(err, model.ErrInvalidStatus):
+		http.Error(w, `{"error": "Invalid status"}`, http.StatusBadRequest)
+	case errors.Is(err, model.ErrInvalidPhone):
+		http.Error(w, `{"error": "Invalid phone number"}`, http.StatusBadRequest)
+	case errors.Is(err, model.ErrInvalidCourierTransportType):
+		http.Error(w, `{"error": "Invalid courier transport type"}`, http.StatusBadRequest)
+	case errors.Is(err, model.ErrPhoneConflict):
+		http.Error(w, `{"error": "Courier with this phone already exists"}`, http.StatusConflict)
+	case errors.Is(err, model.ErrCourierNotFound):
+		http.Error(w, `{"error": "Courier not found"}`, http.StatusNotFound)
+	default:
+		http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
 	}
 }

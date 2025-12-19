@@ -36,7 +36,7 @@ func TestAssignCourier_Success(t *testing.T) {
 		Return(courierWithFewestOrders, nil)
 
 	mockDeadlineFactory.EXPECT().
-		Deadline(gomock.Any(), courierWithFewestOrders.TransportType).
+		Deadline(gomock.Any(), string(courierWithFewestOrders.TransportType)).
 		Return(deadline)
 
 	mockDeliveryRepo.EXPECT().
@@ -55,7 +55,10 @@ func TestAssignCourier_Success(t *testing.T) {
 	got, err := srv.AssignCourier(ctx, req)
 
 	require.NoError(t, err)
-	require.Equal(t, want, got)
+	require.Equal(t, want.CourierId, got.CourierId)
+	require.Equal(t, want.OrderId, got.OrderId)
+	require.EqualValues(t, want.TransportType, got.TransportType)
+	require.Equal(t, want.Deadline, got.Deadline)
 }
 
 func TestAssignCourier_ErrorOnGetCourierIdWithFewestOrders(t *testing.T) {
@@ -129,7 +132,7 @@ func TestAssignCourier_ErrorOnAssignCourier(t *testing.T) {
 		Return(courier, nil)
 
 	mockDeadlineFactory.EXPECT().
-		Deadline(gomock.Any(), courier.TransportType).
+		Deadline(gomock.Any(), string(courier.TransportType)).
 		Return(deadline)
 
 	repoErr := errors.New("db error")

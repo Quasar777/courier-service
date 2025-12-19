@@ -177,7 +177,7 @@ func TestCourier_Create_Success(t *testing.T) {
 	reqBody := `{
 		"name": "testName",
 		"lastname": "testLastName",
-		"phone": "111",
+		"phone": "+79998887766",
 		"status": "available",
 		"transportType": "car"
 	}`
@@ -187,7 +187,7 @@ func TestCourier_Create_Success(t *testing.T) {
 	expectReq := dto.CreateCourierRequest{ 
 		Name: "testName", 
 		Lastname: "testLastName", 
-		Phone: "111", 
+		Phone: "+79998887766", 
 		Status: "available", 
 		TransportType: "car", 
 	}
@@ -236,7 +236,7 @@ func TestCourier_Create_Error(t *testing.T) {
 	reqBody := `{
 		"name": "testName",
 		"lastname": "testLastName",
-		"phone": "111",
+		"phone": "+79998887766",
 		"status": "available",
 		"transportType": "car"
 	}`
@@ -265,7 +265,7 @@ func TestCourier_Update_Success(t *testing.T) {
 		"id": 10,
 		"name": "NewName",
 		"lastname": "NewLast",
-		"phone": "111",
+		"phone": "+79998887766",
 		"status": "available",
 		"transportType": "car"
 	}`
@@ -277,7 +277,7 @@ func TestCourier_Update_Success(t *testing.T) {
 		Id:            10,
 		Name:          "NewName",
 		Lastname:      "NewLast",
-		Phone:         "111",
+		Phone:         "+79998887766",
 		Status:        "available",
 		TransportType: "car",
 	}
@@ -364,12 +364,6 @@ func TestCourier_Update_MissingFields(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPut, "/couriers", strings.NewReader(reqBody))
 	rr := httptest.NewRecorder()
 
-	expectReq := dto.UpdateCourierRequest{Id: 10}
-
-	mockUC.EXPECT().
-		UpdateCourier(gomock.Any(), expectReq).
-		Return(model.ErrMissingRequiredFields)
-
 	c.Update(rr, req)
 
 	require.Equal(t, http.StatusBadRequest, rr.Code)
@@ -383,11 +377,11 @@ func TestCourier_Update_PhoneConflict(t *testing.T) {
 	mockUC := srvmocks.NewMockCourierUseCase(ctrl)
 	c := handler.NewCourierController(mockUC)
 
-	reqBody := `{"id":10,"phone":"111"}`
+	reqBody := `{"id":10,"phone":"+79998887766"}`
 	req := httptest.NewRequest(http.MethodPut, "/couriers", strings.NewReader(reqBody))
 	rr := httptest.NewRecorder()
 
-	expectReq := dto.UpdateCourierRequest{Id: 10, Phone: "111"}
+	expectReq := dto.UpdateCourierRequest{Id: 10, Phone: "+79998887766"}
 
 	mockUC.EXPECT().
 		UpdateCourier(gomock.Any(), expectReq).
@@ -396,7 +390,7 @@ func TestCourier_Update_PhoneConflict(t *testing.T) {
 	c.Update(rr, req)
 
 	require.Equal(t, http.StatusConflict, rr.Code)
-	require.JSONEq(t, `{"error":"Courier with this phone is already exists"}`, rr.Body.String())
+	require.JSONEq(t, `{"error": "Courier with this phone already exists"}`, rr.Body.String())
 }
 
 func TestCourier_Update_DBError(t *testing.T) {

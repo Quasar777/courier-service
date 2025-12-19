@@ -38,7 +38,7 @@ func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req dto.AssignDeliv
 		return nil, err
 	}
 
-	result.TransportType = assignedCourier.TransportType
+	result.TransportType = string(assignedCourier.TransportType)
 	result.Deadline = u.DeadlineFactory.Deadline(time.Now(), result.TransportType)
 
 	_, err = u.DeliveryRepo.AssignCourierWithUpdate(ctx, result.CourierId, result.OrderId, result.Deadline)

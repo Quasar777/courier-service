@@ -93,8 +93,8 @@ func (s *CourierRepositoryTestSuite) TestGetById() {
 	s.Equal("Andrew", courier.Name)
 	s.Equal("Downsky", courier.Lastname)
 	s.Equal("+79990000001", courier.Phone)
-	s.Equal("available", courier.Status)
-	s.Equal("on_foot", courier.TransportType)
+	s.EqualValues("available", courier.Status)
+	s.EqualValues("on_foot", courier.TransportType)
 }
 
 func (s *CourierRepositoryTestSuite) TestGetById_NotFound() {
@@ -200,8 +200,8 @@ func (s *CourierRepositoryTestSuite) TestCreate_Success() {
 	s.Equal(courier.Name, dbCourier.Name)
 	s.Equal(courier.Lastname, dbCourier.Lastname)
 	s.Equal(courier.Phone, dbCourier.Phone)
-	s.Equal(courier.Status, dbCourier.Status)
-	s.Equal(courier.TransportType, dbCourier.TransportType)
+	s.EqualValues(courier.Status, dbCourier.Status)
+	s.EqualValues(courier.TransportType, dbCourier.TransportType)
 }
 
 func (s *CourierRepositoryTestSuite) TestCreate_PhoneConflict() {
@@ -276,8 +276,8 @@ func (s *CourierRepositoryTestSuite) TestUpdate_Success() {
     s.Equal(req.Name, got.Name)
     s.Equal(req.Lastname, got.Lastname)
     s.Equal(req.Phone, got.Phone)
-    s.Equal(req.Status, got.Status)
-    s.Equal(req.TransportType, got.TransportType)
+    s.EqualValues(req.Status, got.Status)
+    s.EqualValues(req.TransportType, got.TransportType)
 }
 
 func (s *CourierRepositoryTestSuite) TestUpdate_NotFound() {

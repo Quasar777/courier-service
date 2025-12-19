@@ -46,10 +46,6 @@ func (u *CourierUseCase) CreateCourier(ctx context.Context, req dto.CreateCourie
 }
 
 func (u *CourierUseCase) UpdateCourier(ctx context.Context, req dto.UpdateCourierRequest) error {
-	if req.Name == "" && req.Lastname == "" && req.Phone == "" && req.Status == "" && req.TransportType == "" {
-        return model.ErrMissingRequiredFields
-    }
-
 	existingCourier, err := u.repository.GetOneById(ctx, req.Id)
 	if err != nil {
 		return err
@@ -65,10 +61,10 @@ func (u *CourierUseCase) UpdateCourier(ctx context.Context, req dto.UpdateCourie
 		req.Phone = existingCourier.Phone
 	}
 	if req.Status == "" {
-		req.Status = existingCourier.Status
+		req.Status = string(existingCourier.Status)
 	}
 	if req.TransportType == "" {
-		req.TransportType = existingCourier.TransportType
+		req.TransportType = string(existingCourier.TransportType)
 	}
  
 	return u.repository.Update(ctx, &req)
