@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
 
 	"github.com/go-chi/chi/v5"
@@ -57,7 +58,7 @@ func (c *CourierController) GetMany(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *CourierController) Create(w http.ResponseWriter, r *http.Request) {
-	var reqCourier model.CreateCourierRequest
+	var reqCourier dto.CreateCourierRequest
 	if err := json.NewDecoder(r.Body).Decode(&reqCourier); err != nil {
 		http.Error(w, `{"error": "Invalid JSON"}`, http.StatusBadRequest)
 		return
@@ -85,7 +86,7 @@ func (c *CourierController) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *CourierController) Update(w http.ResponseWriter, r *http.Request) {
-	var reqCourier model.UpdateCourierRequest
+	var reqCourier dto.UpdateCourierRequest
 	if err := json.NewDecoder(r.Body).Decode(&reqCourier); err != nil {
 		http.Error(w, `{"error": "Invalid JSON"}`, http.StatusBadRequest)
 		return

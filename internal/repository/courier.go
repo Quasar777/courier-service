@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -83,7 +84,7 @@ func (r *CourierRepository) GetAll(ctx context.Context) ([]model.Courier, error)
 	return couriers, nil
 }
 
-func (r *CourierRepository) Create(ctx context.Context, courier *model.CreateCourierRequest) (int, error) {
+func (r *CourierRepository) Create(ctx context.Context, courier *dto.CreateCourierRequest) (int, error) {
 	var id int
 	err := r.pool.QueryRow(ctx, `
 		INSERT INTO couriers (name, lastname, phone, status, transport_type) 
@@ -102,7 +103,7 @@ func (r *CourierRepository) Create(ctx context.Context, courier *model.CreateCou
 	return id, nil
 }
 
-func (r *CourierRepository) Update(ctx context.Context, courier *model.UpdateCourierRequest) error {
+func (r *CourierRepository) Update(ctx context.Context, courier *dto.UpdateCourierRequest) error {
 	result, err := r.pool.Exec(ctx, `
 		UPDATE couriers
 		SET name = $1, lastname = $2, phone = $3, status = $4, transport_type = $5

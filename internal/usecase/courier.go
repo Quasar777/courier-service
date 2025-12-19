@@ -5,6 +5,7 @@ package usecase
 import (
 	"context"
 
+	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
 )
 
@@ -28,7 +29,7 @@ func (u *CourierUseCase) GetCouriers(ctx context.Context) ([]model.Courier, erro
 	return u.repository.GetAll(ctx)
 }
 
-func (u *CourierUseCase) CreateCourier(ctx context.Context, req model.CreateCourierRequest) (int, error) {
+func (u *CourierUseCase) CreateCourier(ctx context.Context, req dto.CreateCourierRequest) (int, error) {
 	if req.Name == "" || req.Lastname == "" || req.Phone == "" {
         return 0, model.ErrMissingRequiredFields
     }
@@ -44,7 +45,7 @@ func (u *CourierUseCase) CreateCourier(ctx context.Context, req model.CreateCour
 	return u.repository.Create(ctx, &req)
 }
 
-func (u *CourierUseCase) UpdateCourier(ctx context.Context, req model.UpdateCourierRequest) error {
+func (u *CourierUseCase) UpdateCourier(ctx context.Context, req dto.UpdateCourierRequest) error {
 	if req.Name == "" && req.Lastname == "" && req.Phone == "" && req.Status == "" && req.TransportType == "" {
         return model.ErrMissingRequiredFields
     }

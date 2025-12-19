@@ -12,20 +12,3 @@ type Courier struct {
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
-
-type CreateCourierRequest struct {
-	Name          string
-	Lastname      string
-	Phone         string
-	Status        string
-	TransportType string
-}
-
-type UpdateCourierRequest struct {
-	Id            int
-	Name          string
-	Lastname      string
-	Phone         string
-	Status        string
-	TransportType string
-}

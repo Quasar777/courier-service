@@ -8,6 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	dto "github.com/Quasar777/courier-service/internal/handler/dto"
 	model "github.com/Quasar777/courier-service/internal/model"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -36,7 +37,7 @@ func (m *MockCourierUseCase) EXPECT() *MockCourierUseCaseMockRecorder {
 }
 
 // CreateCourier mocks base method.
-func (m *MockCourierUseCase) CreateCourier(ctx context.Context, req model.CreateCourierRequest) (int, error) {
+func (m *MockCourierUseCase) CreateCourier(ctx context.Context, req dto.CreateCourierRequest) (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateCourier", ctx, req)
 	ret0, _ := ret[0].(int)
@@ -95,7 +96,7 @@ func (mr *MockCourierUseCaseMockRecorder) GetCouriers(ctx interface{}) *gomock.C
 }
 
 // UpdateCourier mocks base method.
-func (m *MockCourierUseCase) UpdateCourier(ctx context.Context, req model.UpdateCourierRequest) error {
+func (m *MockCourierUseCase) UpdateCourier(ctx context.Context, req dto.UpdateCourierRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateCourier", ctx, req)
 	ret0, _ := ret[0].(error)

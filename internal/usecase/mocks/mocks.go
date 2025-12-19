@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 	time "time"
 
+	dto "github.com/Quasar777/courier-service/internal/handler/dto"
 	model "github.com/Quasar777/courier-service/internal/model"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -37,7 +38,7 @@ func (m *MockCourierRepository) EXPECT() *MockCourierRepositoryMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockCourierRepository) Create(ctx context.Context, courier *model.CreateCourierRequest) (int, error) {
+func (m *MockCourierRepository) Create(ctx context.Context, courier *dto.CreateCourierRequest) (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, courier)
 	ret0, _ := ret[0].(int)
@@ -125,7 +126,7 @@ func (mr *MockCourierRepositoryMockRecorder) ReleaseCouriers(ctx interface{}) *g
 }
 
 // Update mocks base method.
-func (m *MockCourierRepository) Update(ctx context.Context, courier *model.UpdateCourierRequest) error {
+func (m *MockCourierRepository) Update(ctx context.Context, courier *dto.UpdateCourierRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, courier)
 	ret0, _ := ret[0].(error)

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/Quasar777/courier-service/internal/handler"
+	"github.com/Quasar777/courier-service/internal/handler/dto"
 	srvmocks "github.com/Quasar777/courier-service/internal/handler/mocks"
 	"github.com/Quasar777/courier-service/internal/model"
 	"github.com/go-chi/chi/v5"
@@ -183,7 +184,7 @@ func TestCourier_Create_Success(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/couriers", strings.NewReader(reqBody))
 	rr := httptest.NewRecorder()
 
-	expectReq := model.CreateCourierRequest{ 
+	expectReq := dto.CreateCourierRequest{ 
 		Name: "testName", 
 		Lastname: "testLastName", 
 		Phone: "111", 
@@ -272,7 +273,7 @@ func TestCourier_Update_Success(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
 
-	expectReq := model.UpdateCourierRequest{
+	expectReq := dto.UpdateCourierRequest{
 		Id:            10,
 		Name:          "NewName",
 		Lastname:      "NewLast",
@@ -340,7 +341,7 @@ func TestCourier_Update_NotFound(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPut, "/couriers", strings.NewReader(reqBody))
 	rr := httptest.NewRecorder()
 
-	expectReq := model.UpdateCourierRequest{Id: 10, Name: "X"}
+	expectReq := dto.UpdateCourierRequest{Id: 10, Name: "X"}
 
 	mockUC.EXPECT().
 		UpdateCourier(gomock.Any(), expectReq).
@@ -363,7 +364,7 @@ func TestCourier_Update_MissingFields(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPut, "/couriers", strings.NewReader(reqBody))
 	rr := httptest.NewRecorder()
 
-	expectReq := model.UpdateCourierRequest{Id: 10}
+	expectReq := dto.UpdateCourierRequest{Id: 10}
 
 	mockUC.EXPECT().
 		UpdateCourier(gomock.Any(), expectReq).
@@ -386,7 +387,7 @@ func TestCourier_Update_PhoneConflict(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPut, "/couriers", strings.NewReader(reqBody))
 	rr := httptest.NewRecorder()
 
-	expectReq := model.UpdateCourierRequest{Id: 10, Phone: "111"}
+	expectReq := dto.UpdateCourierRequest{Id: 10, Phone: "111"}
 
 	mockUC.EXPECT().
 		UpdateCourier(gomock.Any(), expectReq).
@@ -409,7 +410,7 @@ func TestCourier_Update_DBError(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPut, "/couriers", strings.NewReader(reqBody))
 	rr := httptest.NewRecorder()
 
-	expectReq := model.UpdateCourierRequest{Id: 10, Name: "X"}
+	expectReq := dto.UpdateCourierRequest{Id: 10, Name: "X"}
 	dbErr := errors.New("db error")
 
 	mockUC.EXPECT().

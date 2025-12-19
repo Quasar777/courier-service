@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
 	"github.com/Quasar777/courier-service/internal/usecase"
 	"github.com/Quasar777/courier-service/internal/usecase/mocks"
@@ -73,12 +74,12 @@ func TestCreateCourier_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockRepo := mocks.NewMockCourierRepository(ctrl)
 	s := usecase.NewCourierUseCase(mockRepo)
-	request := model.CreateCourierRequest{
+	request := dto.CreateCourierRequest{
 		Name: "Andrew",
 		Lastname: "Ravshanov",
 		Phone: "+79998887766",
 	}
-	expectedReq := model.CreateCourierRequest{
+	expectedReq := dto.CreateCourierRequest{
 		Name: "Andrew",
 		Lastname: "Ravshanov",
 		Phone: "+79998887766",
@@ -99,13 +100,13 @@ func TestCreateCourier_SuccessWithPassedStatus(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockRepo := mocks.NewMockCourierRepository(ctrl)
 	s := usecase.NewCourierUseCase(mockRepo)
-	request := model.CreateCourierRequest{
+	request := dto.CreateCourierRequest{
 		Name: "Andrew",
 		Lastname: "Ravshanov",
 		Phone: "+79998887766",
 		Status: "paused",
 	}
-	expectedReq := model.CreateCourierRequest{
+	expectedReq := dto.CreateCourierRequest{
 		Name: "Andrew",
 		Lastname: "Ravshanov",
 		Phone: "+79998887766",
@@ -126,13 +127,13 @@ func TestCreateCourier_SuccessWithPassedTransportType(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockRepo := mocks.NewMockCourierRepository(ctrl)
 	s := usecase.NewCourierUseCase(mockRepo)
-	request := model.CreateCourierRequest{
+	request := dto.CreateCourierRequest{
 		Name: "Andrew",
 		Lastname: "Ravshanov",
 		Phone: "+79998887766",
 		TransportType: "car",
 	}
-	expectedReq := model.CreateCourierRequest{
+	expectedReq := dto.CreateCourierRequest{
 		Name: "Andrew",
 		Lastname: "Ravshanov",
 		Phone: "+79998887766",
@@ -153,7 +154,7 @@ func TestCreateCourier_ErrMissinRequiredFields(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockRepo := mocks.NewMockCourierRepository(ctrl)
 	s := usecase.NewCourierUseCase(mockRepo)
-	request := model.CreateCourierRequest{}
+	request := dto.CreateCourierRequest{}
 
 	got, err := s.CreateCourier(t.Context(), request)
 
@@ -166,7 +167,7 @@ func TestUpdateCourier_Success(t *testing.T) {
 	mockRepo := mocks.NewMockCourierRepository(ctrl)
 	s := usecase.NewCourierUseCase(mockRepo)
 	ctx := t.Context()
-	req := model.UpdateCourierRequest{
+	req := dto.UpdateCourierRequest{
 		Id:       10,
 		Name:     "Andrew",
 		Lastname: "",
@@ -185,7 +186,7 @@ func TestUpdateCourier_Success(t *testing.T) {
 	mockRepo.EXPECT().
 		GetOneById(ctx, 10).
 		Return(existing, nil)
-	expectedReq := model.UpdateCourierRequest{
+	expectedReq := dto.UpdateCourierRequest{
 		Id:            10,
 		Name:          "Andrew",
 		Lastname:      "Smith",
@@ -209,7 +210,7 @@ func TestUpdateCourier_ErrMissingFields(t *testing.T) {
 	mockRepo := mocks.NewMockCourierRepository(ctrl)
 	s := usecase.NewCourierUseCase(mockRepo)
 
-	req := model.UpdateCourierRequest{Id: 10}
+	req := dto.UpdateCourierRequest{Id: 10}
 
 	err := s.UpdateCourier(t.Context(), req)
 
@@ -224,7 +225,7 @@ func TestUpdateCourier_GetOneByIdError(t *testing.T) {
 	s := usecase.NewCourierUseCase(mockRepo)
 
 	ctx := t.Context()
-	req := model.UpdateCourierRequest{
+	req := dto.UpdateCourierRequest{
 		Id:   10,
 		Name: "NewName",
 	}
@@ -247,7 +248,7 @@ func TestUpdateCourier_NotFound(t *testing.T) {
 	s := usecase.NewCourierUseCase(mockRepo)
 
 	ctx := t.Context()
-	req := model.UpdateCourierRequest{
+	req := dto.UpdateCourierRequest{
 		Id:   10,
 		Name: "NewName",
 	}
@@ -269,7 +270,7 @@ func TestUpdateCourier_UpdateError(t *testing.T) {
 	s := usecase.NewCourierUseCase(mockRepo)
 
 	ctx := t.Context()
-	req := model.UpdateCourierRequest{
+	req := dto.UpdateCourierRequest{
 		Id:   10,
 		Name: "Andrew",
 	}
@@ -287,7 +288,7 @@ func TestUpdateCourier_UpdateError(t *testing.T) {
 		GetOneById(ctx, 10).
 		Return(existing, nil)
 
-	expectedReq := model.UpdateCourierRequest{
+	expectedReq := dto.UpdateCourierRequest{
 		Id:            10,
 		Name:          "Andrew",
 		Lastname:      "Smith",
@@ -314,7 +315,7 @@ func TestUpdateCourier_AllFieldsProvided(t *testing.T) {
 	s := usecase.NewCourierUseCase(mockRepo)
 
 	ctx := t.Context()
-	req := model.UpdateCourierRequest{
+	req := dto.UpdateCourierRequest{
 		Id:            10,
 		Name:          "Andrew",
 		Lastname:      "Ravshanov",

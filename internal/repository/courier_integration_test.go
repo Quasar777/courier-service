@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
 	"github.com/Quasar777/courier-service/internal/repository"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -175,7 +176,7 @@ func (s *CourierRepositoryTestSuite) TestCreate_Success() {
 	_, err := s.pool.Exec(ctx, `DELETE FROM couriers`)
 	s.Require().NoError(err)
 
-	courier := &model.CreateCourierRequest{
+	courier := &dto.CreateCourierRequest{
 		Name:          "Andrew",
 		Lastname:      "Downsky",
 		Phone:         "+79990009988",
@@ -209,7 +210,7 @@ func (s *CourierRepositoryTestSuite) TestCreate_PhoneConflict() {
 	_, err := s.pool.Exec(ctx, `DELETE FROM couriers`)
 	s.Require().NoError(err)
 
-	courier1 := &model.CreateCourierRequest{
+	courier1 := &dto.CreateCourierRequest{
 		Name:          "Andrew",
 		Lastname:      "Downsky",
 		Phone:         "+79990009988",
@@ -220,7 +221,7 @@ func (s *CourierRepositoryTestSuite) TestCreate_PhoneConflict() {
 	_, err = s.repo.Create(ctx, courier1)
 	s.Require().NoError(err)
 
-	courier2 := &model.CreateCourierRequest{
+	courier2 := &dto.CreateCourierRequest{
 		Name:          "John",
 		Lastname:      "Doe",
 		Phone:         "+79990009988",
@@ -250,7 +251,7 @@ func (s *CourierRepositoryTestSuite) TestUpdate_Success() {
     `, "Old", "Name", "phone-old", "available", "on_foot").Scan(&id)
     s.Require().NoError(err)
 
-    req := &model.UpdateCourierRequest{
+    req := &dto.UpdateCourierRequest{
         Id:            id,
         Name:          "New",
         Lastname:      "Surname",
@@ -282,7 +283,7 @@ func (s *CourierRepositoryTestSuite) TestUpdate_Success() {
 func (s *CourierRepositoryTestSuite) TestUpdate_NotFound() {
     ctx := context.Background()
 
-    req := &model.UpdateCourierRequest{
+    req := &dto.UpdateCourierRequest{
         Id:            999999999,
         Name:          "X",
         Lastname:      "Y",
@@ -318,7 +319,7 @@ func (s *CourierRepositoryTestSuite) TestUpdate_PhoneConflict() {
     `, "B", "Two", "phone-222", "available", "bike").Scan(&id2)
     s.Require().NoError(err)
 
-    req := &model.UpdateCourierRequest{
+    req := &dto.UpdateCourierRequest{
         Id:            id2,
         Name:          "B",
         Lastname:      "Two",
