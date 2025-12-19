@@ -167,6 +167,18 @@ func (s *DeliveryRepositoryTestSuite) TestUnassign_NoRelationFound() {
 	s.Nil(d)
 }
 
+func (s *DeliveryRepositoryTestSuite) TearDownSuite() {
+	s.pool.Close()
+}
+
+func (s *DeliveryRepositoryTestSuite) TearDownTest() {
+	ctx := context.Background()
+
+	_, err := s.pool.Exec(ctx, `TRUNCATE delivery, couriers RESTART IDENTITY CASCADE`)
+	s.Require().NoError(err)
+
+	s.couriersID = nil
+}
 func TestDeliveryRepositoryTestSuite(t *testing.T) {
 	suite.Run(t, new(DeliveryRepositoryTestSuite))
 }
