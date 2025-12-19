@@ -20,7 +20,7 @@ type DeliveryRepositoryTestSuite struct {
 }
 
 func (s *DeliveryRepositoryTestSuite) SetupSuite() {
-	err := godotenv.Load("../../.env.test")
+	err := godotenv.Load("../../.env")
 	s.Require().NoError(err)
 
 	pool, err := mustInitPool(context.Background())

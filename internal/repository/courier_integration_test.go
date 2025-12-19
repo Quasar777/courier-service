@@ -22,7 +22,7 @@ type CourierRepositoryTestSuite struct {
 }
 
 func (s *CourierRepositoryTestSuite) SetupSuite() {
-	err := godotenv.Load("../../.env.test")
+	err := godotenv.Load("../../.env")
 	s.Require().NoError(err)
 
 	pool, err := mustInitPool(context.Background())
@@ -471,12 +471,12 @@ func (s *CourierRepositoryTestSuite) TearDownTest() {
 }
 
 func getConnectionString() (string, error) {
-	err := godotenv.Load("../../.env.test")
+	err := godotenv.Load("../../.env")
 	if err != nil {
 		return "", err
 	}
 
-	connString := os.Getenv("DB_CONNECTION_STRING")
+	connString := os.Getenv("DB_CONNECTION_STRING_TEST")
 	if connString == "" {
 		return "", err
 	}

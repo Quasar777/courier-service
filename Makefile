@@ -4,6 +4,7 @@ export ${shell sed 's/=.*//' .env}
 
 GOOSE_DRIVER = postgres
 GOOSE_DBSTRING = ${DB_CONNECTION_STRING}
+GOOSE_DBSTRING_TEST = ${DB_CONNECTION_STRING_TEST}
 MIGRATIONS_DIR = migrations
 
 .PHONY: migrate-up migrate-down migrate-status migrate-create migrate-version run
@@ -15,7 +16,7 @@ migrate-up:
 
 migrate-up-test:
 	@echo "Applying migrations from ${MIGRATIONS_DIR}..."
-	GOOSE_DRIVER=${GOOSE_DRIVER} GOOSE_DBSTRING=${GOOSE_DBSTRING} goose -dir ${MIGRATIONS_DIR} up
+	GOOSE_DRIVER=${GOOSE_DRIVER} GOOSE_DBSTRING=${GOOSE_DBSTRING_TEST} goose -dir ${MIGRATIONS_DIR} up
 
 migrate-down:
 	@echo "Rolling back migrations..."
