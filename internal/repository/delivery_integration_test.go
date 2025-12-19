@@ -30,6 +30,42 @@ func (s *DeliveryRepositoryTestSuite) SetupSuite() {
 	s.repo = repository.NewDeliveryRepository(s.pool)
 }
 
+func (s *DeliveryRepositoryTestSuite) SetupTest() {
+	s.couriersID = nil
+	ctx := context.Background()
+
+	ids := make([]int, 0, 3)
+
+	var id1 int
+	err := s.pool.QueryRow(ctx, `
+		INSERT INTO couriers (name, lastname, phone, status, transport_type)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
+	`, "Andrew", "Downsky", "+79990000001", "available", "on_foot").Scan(&id1)
+	s.Require().NoError(err)
+	ids = append(ids, id1)
+
+	var id2 int
+	err = s.pool.QueryRow(ctx, `
+		INSERT INTO couriers (name, lastname, phone, status, transport_type)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
+	`, "Sergey", "Sergeev", "+79990000002", "available", "scooter").Scan(&id2)
+	s.Require().NoError(err)
+	ids = append(ids, id2)
+
+	var id3 int
+	err = s.pool.QueryRow(ctx, `
+		INSERT INTO couriers (name, lastname, phone, status, transport_type)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
+	`, "Ivan", "Ivanov", "+79990000003", "available", "car").Scan(&id3)
+	s.Require().NoError(err)
+	ids = append(ids, id3)
+
+	s.couriersID = ids
+}
+
 func (s *DeliveryRepositoryTestSuite) TestAssign_Success() {
 	ctx := context.Background()
 
@@ -131,95 +167,7 @@ func (s *DeliveryRepositoryTestSuite) TestUnassign_NoRelationFound() {
 	s.Nil(d)
 }
 
-func (s *DeliveryRepositoryTestSuite) TestReleaseCouriers_ReleasesOnlyExpiredBusy() {
-	ctx := context.Background()
 
-	// Подготовка:
-	// courier1 busy + deadline в прошлом => должен стать available
-	// courier2 busy + deadline в будущем => должен остаться busy
-	// courier3 available + deadline в прошлом => должен остаться available
-
-	c1 := s.couriersID[0]
-	c2 := s.couriersID[1]
-	c3 := s.couriersID[2]
-
-	_, err := s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c1)
-	s.Require().NoError(err)
-	_, err = s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c2)
-	s.Require().NoError(err)
-
-	past := time.Now().Add(-2 * time.Hour)
-	future := time.Now().Add(2 * time.Hour)
-
-	_, err = s.pool.Exec(ctx, `
-		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
-		VALUES ($1, $2, NOW(), $3)
-	`, c1, "order-expired", past)
-	s.Require().NoError(err)
-
-	_, err = s.pool.Exec(ctx, `
-		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
-		VALUES ($1, $2, NOW(), $3)
-	`, c2, "order-active", future)
-	s.Require().NoError(err)
-
-	_, err = s.pool.Exec(ctx, `
-		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
-		VALUES ($1, $2, NOW(), $3)
-	`, c3, "order-expired-available", past)
-	s.Require().NoError(err)
-
-	
-	err = s.repo.ReleaseCouriers(ctx)
-	s.Require().NoError(err)
-
-	
-	status := func(id int) string {
-		var st string
-		e := s.pool.QueryRow(ctx, `SELECT status FROM couriers WHERE id = $1`, id).Scan(&st)
-		s.Require().NoError(e)
-		return st
-	}
-
-	s.Equal("available", status(c1))
-	s.Equal("busy", status(c2))
-	s.Equal("available", status(c3))
-}
-
-func (s *DeliveryRepositoryTestSuite) TestReleaseCouriers_NoExpired_NoChanges() {
-	ctx := context.Background()
-
-	c1 := s.couriersID[0]
-	c2 := s.couriersID[1]
-
-	_, err := s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c1)
-	s.Require().NoError(err)
-	_, err = s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c2)
-	s.Require().NoError(err)
-
-	future := time.Now().Add(2 * time.Hour)
-
-	_, err = s.pool.Exec(ctx, `
-		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
-		VALUES ($1, $2, NOW(), $3)
-	`, c1, "order-f1", future)
-	s.Require().NoError(err)
-
-	_, err = s.pool.Exec(ctx, `
-		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
-		VALUES ($1, $2, NOW(), $3)
-	`, c2, "order-f2", future)
-	s.Require().NoError(err)
-
-	err = s.repo.ReleaseCouriers(ctx)
-	s.Require().NoError(err)
-
-	var st1, st2 string
-	s.Require().NoError(s.pool.QueryRow(ctx, `SELECT status FROM couriers WHERE id = $1`, c1).Scan(&st1))
-	s.Require().NoError(s.pool.QueryRow(ctx, `SELECT status FROM couriers WHERE id = $1`, c2).Scan(&st2))
-	s.Equal("busy", st1)
-	s.Equal("busy", st2)
-}
 
 func (s *DeliveryRepositoryTestSuite) TestGetCourierIdWithFewestOrders_Success() {
 	ctx := context.Background()
@@ -291,45 +239,8 @@ func (s *DeliveryRepositoryTestSuite) TestGetCourierIdWithFewestOrders_NoAvailab
 	s.Equal(0, id)
 }
 
-
 func (s *DeliveryRepositoryTestSuite) TearDownSuite() {
 	s.pool.Close()
-}
-
-func (s *DeliveryRepositoryTestSuite) SetupTest() {
-	s.couriersID = nil
-	ctx := context.Background()
-
-	ids := make([]int, 0, 3)
-
-	var id1 int
-	err := s.pool.QueryRow(ctx, `
-		INSERT INTO couriers (name, lastname, phone, status, transport_type)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id
-	`, "Andrew", "Downsky", "+79990000001", "available", "on_foot").Scan(&id1)
-	s.Require().NoError(err)
-	ids = append(ids, id1)
-
-	var id2 int
-	err = s.pool.QueryRow(ctx, `
-		INSERT INTO couriers (name, lastname, phone, status, transport_type)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id
-	`, "Sergey", "Sergeev", "+79990000002", "available", "scooter").Scan(&id2)
-	s.Require().NoError(err)
-	ids = append(ids, id2)
-
-	var id3 int
-	err = s.pool.QueryRow(ctx, `
-		INSERT INTO couriers (name, lastname, phone, status, transport_type)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id
-	`, "Ivan", "Ivanov", "+79990000003", "available", "car").Scan(&id3)
-	s.Require().NoError(err)
-	ids = append(ids, id3)
-
-	s.couriersID = ids
 }
 
 func (s *DeliveryRepositoryTestSuite) TearDownTest() {

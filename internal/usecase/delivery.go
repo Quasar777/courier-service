@@ -86,5 +86,5 @@ func (u *DeliveryUseCase) RunDeliveryChecker(ctx context.Context, interval time.
 }
 
 func (u *DeliveryUseCase) ReleaseExpiredDeliveries(ctx context.Context) error {
-    return u.DeliveryRepo.ReleaseCouriers(ctx)
+    return u.CourierRepo.ReleaseCouriers(ctx)
 }

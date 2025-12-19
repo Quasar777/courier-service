@@ -29,7 +29,6 @@ func (s *CourierRepositoryTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 
 	s.pool = pool
-
 	s.repo = repository.NewCourierRepository(s.pool)
 }
 
@@ -367,6 +366,95 @@ func (s *CourierRepositoryTestSuite) TestDelete_NotFound() {
 	s.ErrorIs(err, model.ErrCourierNotFound)
 }
 
+func (s *CourierRepositoryTestSuite) TestReleaseCouriers_ReleasesOnlyExpiredBusy() {
+	ctx := context.Background()
+
+	// Подготовка:
+	// courier1 busy + deadline в прошлом => должен стать available
+	// courier2 busy + deadline в будущем => должен остаться busy
+	// courier3 available + deadline в прошлом => должен остаться available
+
+	c1 := s.couriersId[0]
+	c2 := s.couriersId[1]
+	c3 := s.couriersId[2]
+
+	_, err := s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c1)
+	s.Require().NoError(err)
+	_, err = s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c2)
+	s.Require().NoError(err)
+
+	past := time.Now().Add(-2 * time.Hour)
+	future := time.Now().Add(2 * time.Hour)
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), $3)
+	`, c1, "order-expired", past)
+	s.Require().NoError(err)
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), $3)
+	`, c2, "order-active", future)
+	s.Require().NoError(err)
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), $3)
+	`, c3, "order-expired-available", past)
+	s.Require().NoError(err)
+
+	
+	err = s.repo.ReleaseCouriers(ctx)
+	s.Require().NoError(err)
+
+	
+	status := func(id int) string {
+		var st string
+		e := s.pool.QueryRow(ctx, `SELECT status FROM couriers WHERE id = $1`, id).Scan(&st)
+		s.Require().NoError(e)
+		return st
+	}
+
+	s.Equal("available", status(c1))
+	s.Equal("busy", status(c2))
+	s.Equal("available", status(c3))
+}
+
+func (s *CourierRepositoryTestSuite) TestReleaseCouriers_NoExpired_NoChanges() {
+	ctx := context.Background()
+
+	c1 := s.couriersId[0]
+	c2 := s.couriersId[1]
+
+	_, err := s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c1)
+	s.Require().NoError(err)
+	_, err = s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c2)
+	s.Require().NoError(err)
+
+	future := time.Now().Add(2 * time.Hour)
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), $3)
+	`, c1, "order-f1", future)
+	s.Require().NoError(err)
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), $3)
+	`, c2, "order-f2", future)
+	s.Require().NoError(err)
+
+	err = s.repo.ReleaseCouriers(ctx)
+	s.Require().NoError(err)
+
+	var st1, st2 string
+	s.Require().NoError(s.pool.QueryRow(ctx, `SELECT status FROM couriers WHERE id = $1`, c1).Scan(&st1))
+	s.Require().NoError(s.pool.QueryRow(ctx, `SELECT status FROM couriers WHERE id = $1`, c2).Scan(&st2))
+	s.Equal("busy", st1)
+	s.Equal("busy", st2)
+}
 
 func TestCourierRepositoryTestSuite(t *testing.T) {
 	suite.Run(t, new(CourierRepositoryTestSuite))
@@ -374,13 +462,6 @@ func TestCourierRepositoryTestSuite(t *testing.T) {
 
 func (s *CourierRepositoryTestSuite) TearDownTest() {
 	ctx := context.Background()
-
-	// for _, id := range s.couriersId {
-	// 	_, err := s.pool.Exec(ctx, `
-	// 		DELETE FROM couriers WHERE id = $1	
-	// 	`, id)
-	// 	s.Require().NoError(err)
-	// }
 
 	_, err := s.pool.Exec(ctx, `TRUNCATE couriers`)
 	s.Require().NoError(err)

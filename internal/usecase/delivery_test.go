@@ -205,7 +205,7 @@ func TestReleaseExpiredDeliveries_Success(t *testing.T) {
 	srv := usecase.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 
-	mockDeliveryRepo.EXPECT().
+	mockCourierRepo.EXPECT().
 		ReleaseCouriers(ctx).
 		Return(nil)
 
@@ -226,7 +226,7 @@ func TestReleaseExpiredDeliveries_Error(t *testing.T) {
 	ctx := t.Context()
 
 	repoErr := errors.New("db error")
-	mockDeliveryRepo.EXPECT().
+	mockCourierRepo.EXPECT().
 		ReleaseCouriers(ctx).
 		Return(repoErr)
 
@@ -248,7 +248,7 @@ func TestRunDeliveryChecker_StopsOnContextCancel(t *testing.T) {
 
 	called := make(chan struct{}, 1)
 
-	mockDeliveryRepo.EXPECT().
+	mockCourierRepo.EXPECT().
 		ReleaseCouriers(gomock.Any()).
 		DoAndReturn(func(context.Context) error {
 			// сигналим, что тик случился

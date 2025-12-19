@@ -63,7 +63,6 @@ func (r *DeliveryRepository) AssignCourierWithUpdate(ctx context.Context, courie
     return d, nil
 }
 
-
 func (r *DeliveryRepository) UnassignWithUpdate(ctx context.Context, orderId string) (*model.Delivery, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -112,24 +111,6 @@ func (r *DeliveryRepository) UnassignWithUpdate(ctx context.Context, orderId str
     }
 
 	return d, nil
-}
-
-func (r *DeliveryRepository) ReleaseCouriers(ctx context.Context) error {
-	 _, err := r.pool.Exec(ctx, `
-		UPDATE couriers 
-		SET status = 'available'
-		WHERE id IN (
-			SELECT courier_id 
-			FROM delivery
-			WHERE deadline < NOW()
-		) AND status = 'busy'
-	`)
-
-	if err != nil {
-		return fmt.Errorf("database error: %w", err)
-	}
-
-	return nil
 }
 
 func (r *DeliveryRepository) GetCourierIdWithFewestOrders(ctx context.Context) (int, error) {

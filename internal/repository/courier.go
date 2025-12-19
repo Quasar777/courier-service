@@ -154,3 +154,21 @@ func (r *CourierRepository) Delete(ctx context.Context, id int) error {
 
 	return nil
 }
+
+func (r *CourierRepository) ReleaseCouriers(ctx context.Context) error {
+	 _, err := r.pool.Exec(ctx, `
+		UPDATE couriers 
+		SET status = 'available'
+		WHERE id IN (
+			SELECT courier_id 
+			FROM delivery
+			WHERE deadline < NOW()
+		) AND status = 'busy'
+	`)
+
+	if err != nil {
+		return fmt.Errorf("database error: %w", err)
+	}
+
+	return nil
+}
