@@ -14,12 +14,12 @@ type CourierRepository interface {
 	Update(ctx context.Context, courier *model.UpdateCourierRequest) error
 	Delete(ctx context.Context, id int) error
 	ReleaseCouriers(ctx context.Context) error
+	GetCourierIdWithFewestOrders(ctx context.Context) (int, error)
 }
 
 type DeliveryRepository interface {
 	AssignCourierWithUpdate(ctx context.Context, courierId int, orderId string, deadline time.Time) (*model.Delivery, error)
 	UnassignWithUpdate(ctx context.Context, orderId string) (*model.Delivery, error)
-	GetCourierIdWithFewestOrders(ctx context.Context) (int, error)
 }
 
 type IDeadlineFactory interface {

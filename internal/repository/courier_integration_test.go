@@ -456,6 +456,77 @@ func (s *CourierRepositoryTestSuite) TestReleaseCouriers_NoExpired_NoChanges() {
 	s.Equal("busy", st2)
 }
 
+func (s *CourierRepositoryTestSuite) TestGetCourierIdWithFewestOrders_Success() {
+	ctx := context.Background()
+
+	c1 := s.couriersId[0]
+	c2 := s.couriersId[1]
+	c3 := s.couriersId[2]
+
+	_, err := s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), NOW() + interval '1 hour'),
+		       ($1, $3, NOW(), NOW() + interval '1 hour')
+	`, c1, "order-c1-1", "order-c1-2")
+	s.Require().NoError(err)
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), NOW() + interval '1 hour')
+	`, c2, "order-c2-1")
+	s.Require().NoError(err)
+
+
+	id, err := s.repo.GetCourierIdWithFewestOrders(ctx)
+
+
+	s.Require().NoError(err)
+	s.Equal(c3, id)
+}
+
+func (s *CourierRepositoryTestSuite) TestGetCourierIdWithFewestOrders_IgnoresBusy() {
+	ctx := context.Background()
+
+	c1 := s.couriersId[0]
+	c2 := s.couriersId[1]
+	c3 := s.couriersId[2]
+
+	_, err := s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c3)
+	s.Require().NoError(err)
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), NOW() + interval '1 hour'),
+		       ($1, $3, NOW(), NOW() + interval '1 hour')
+	`, c1, "order1", "order2")
+	s.Require().NoError(err)
+
+	_, err = s.pool.Exec(ctx, `
+		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
+		VALUES ($1, $2, NOW(), NOW() + interval '1 hour')
+	`, c2, "order3")
+	s.Require().NoError(err)
+
+	id, err := s.repo.GetCourierIdWithFewestOrders(ctx)
+
+	s.Require().NoError(err)
+	s.Equal(c2, id)
+}
+
+func (s *CourierRepositoryTestSuite) TestGetCourierIdWithFewestOrders_NoAvailable() {
+	ctx := context.Background()
+
+	_, err := s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy'`)
+	s.Require().NoError(err)
+
+	id, err := s.repo.GetCourierIdWithFewestOrders(ctx)
+
+	s.Require().Error(err)
+	s.ErrorIs(err, model.ErrNoAvailableCouriers)
+	s.Equal(0, id)
+}
+
+
 func TestCourierRepositoryTestSuite(t *testing.T) {
 	suite.Run(t, new(CourierRepositoryTestSuite))
 }

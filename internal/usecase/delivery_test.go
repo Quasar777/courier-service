@@ -27,7 +27,7 @@ func TestAssignCourier_Success(t *testing.T) {
 	deadline := time.Now().Add(5 * time.Minute)
 
 	courierWithFewestOrders := &model.Courier{Id: 10, TransportType: "car"}
-	mockDeliveryRepo.EXPECT().
+	mockCourierRepo.EXPECT().
 		GetCourierIdWithFewestOrders(ctx).
 		Return(10, nil)
 
@@ -71,7 +71,7 @@ func TestAssignCourier_ErrorOnGetCourierIdWithFewestOrders(t *testing.T) {
 
 	repoErr := errors.New("db error")
 
-	mockDeliveryRepo.EXPECT().
+	mockCourierRepo.EXPECT().
 		GetCourierIdWithFewestOrders(ctx).
 		Return(0, repoErr)
 
@@ -92,7 +92,7 @@ func TestAssignCourier_ErrorOnGetCourierById(t *testing.T) {
 	srv := usecase.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 
-	mockDeliveryRepo.EXPECT().
+	mockCourierRepo.EXPECT().
 		GetCourierIdWithFewestOrders(ctx).
 		Return(10, nil)
 
@@ -119,7 +119,7 @@ func TestAssignCourier_ErrorOnAssignCourier(t *testing.T) {
 	ctx := t.Context()
 	deadline := time.Now().Add(5 * time.Minute)
 
-	mockDeliveryRepo.EXPECT().
+	mockCourierRepo.EXPECT().
 		GetCourierIdWithFewestOrders(ctx).
 		Return(10, nil)
 

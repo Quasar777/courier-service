@@ -112,26 +112,3 @@ func (r *DeliveryRepository) UnassignWithUpdate(ctx context.Context, orderId str
 
 	return d, nil
 }
-
-func (r *DeliveryRepository) GetCourierIdWithFewestOrders(ctx context.Context) (int, error) {
-	var id int
-
-	err := r.pool.QueryRow(ctx,`
-		SELECT c.id
-		FROM couriers c
-		LEFT JOIN delivery d ON d.courier_id = c.id
-		WHERE c.status = 'available'
-		GROUP BY c.id
-		ORDER BY COUNT(d.id) ASC
-		LIMIT 1;
-		`).Scan(&id)
-
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, model.ErrNoAvailableCouriers
-		}
-		return 0, fmt.Errorf("database error: %w", err)
-	}
-
-	return id, nil
-}

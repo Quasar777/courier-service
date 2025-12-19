@@ -25,7 +25,7 @@ func NewDeliveryUseCase(deliveryRepo DeliveryRepository, courierRepo CourierRepo
 func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req model.AssignDeliveryRequest) (*model.AssignedDeliveryResponse, error) {
 	result := model.AssignedDeliveryResponse{}
 
-	id, err := u.DeliveryRepo.GetCourierIdWithFewestOrders(ctx)
+	id, err := u.CourierRepo.GetCourierIdWithFewestOrders(ctx)
 	if err != nil {
 		return nil, err
 	}

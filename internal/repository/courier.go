@@ -172,3 +172,26 @@ func (r *CourierRepository) ReleaseCouriers(ctx context.Context) error {
 
 	return nil
 }
+
+func (r *CourierRepository) GetCourierIdWithFewestOrders(ctx context.Context) (int, error) {
+	var id int
+
+	err := r.pool.QueryRow(ctx,`
+		SELECT c.id
+		FROM couriers c
+		LEFT JOIN delivery d ON d.courier_id = c.id
+		WHERE c.status = 'available'
+		GROUP BY c.id
+		ORDER BY COUNT(d.id) ASC
+		LIMIT 1;
+		`).Scan(&id)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, model.ErrNoAvailableCouriers
+		}
+		return 0, fmt.Errorf("database error: %w", err)
+	}
+
+	return id, nil
+}

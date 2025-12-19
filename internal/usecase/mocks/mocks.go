@@ -80,6 +80,21 @@ func (mr *MockCourierRepositoryMockRecorder) GetAll(ctx interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockCourierRepository)(nil).GetAll), ctx)
 }
 
+// GetCourierIdWithFewestOrders mocks base method.
+func (m *MockCourierRepository) GetCourierIdWithFewestOrders(ctx context.Context) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCourierIdWithFewestOrders", ctx)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCourierIdWithFewestOrders indicates an expected call of GetCourierIdWithFewestOrders.
+func (mr *MockCourierRepositoryMockRecorder) GetCourierIdWithFewestOrders(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCourierIdWithFewestOrders", reflect.TypeOf((*MockCourierRepository)(nil).GetCourierIdWithFewestOrders), ctx)
+}
+
 // GetOneById mocks base method.
 func (m *MockCourierRepository) GetOneById(ctx context.Context, id int) (*model.Courier, error) {
 	m.ctrl.T.Helper()
@@ -159,21 +174,6 @@ func (m *MockDeliveryRepository) AssignCourierWithUpdate(ctx context.Context, co
 func (mr *MockDeliveryRepositoryMockRecorder) AssignCourierWithUpdate(ctx, courierId, orderId, deadline interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AssignCourierWithUpdate", reflect.TypeOf((*MockDeliveryRepository)(nil).AssignCourierWithUpdate), ctx, courierId, orderId, deadline)
-}
-
-// GetCourierIdWithFewestOrders mocks base method.
-func (m *MockDeliveryRepository) GetCourierIdWithFewestOrders(ctx context.Context) (int, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCourierIdWithFewestOrders", ctx)
-	ret0, _ := ret[0].(int)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCourierIdWithFewestOrders indicates an expected call of GetCourierIdWithFewestOrders.
-func (mr *MockDeliveryRepositoryMockRecorder) GetCourierIdWithFewestOrders(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCourierIdWithFewestOrders", reflect.TypeOf((*MockDeliveryRepository)(nil).GetCourierIdWithFewestOrders), ctx)
 }
 
 // UnassignWithUpdate mocks base method.
