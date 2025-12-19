@@ -3,41 +3,41 @@ package model
 import "time"
 
 type Delivery struct {
-	Id         int       `json:"id"`
-	CourierId  int       `json:"courierId"`
-	OrderId    string    `json:"orderId"`
-	AssignedAt time.Time `json:"assignedAt"`
-	Deadline   time.Time `json:"deadline"`
+	Id         int
+	CourierId  int
+	OrderId    string
+	AssignedAt time.Time
+	Deadline   time.Time
 }
 
 type CreateDeliveryRequest struct {
-	CourierId int       `json:"courierId"`
-	OrderId   string    `json:"orderId"`
-	Deadline  time.Time `json:"deadline"`
+	CourierId int
+	OrderId   string
+	Deadline  time.Time
 }
 
 type UpdateDeliveryRequest struct {
-	CourierId int       `json:"courierId"`
-	Deadline  time.Time `json:"deadline"`
+	CourierId int
+	Deadline  time.Time
 }
 
 type AssignDeliveryRequest struct {
-	OrderId string `json:"orderId"`
+	OrderId string
 }
 
 type UnassignDeliveryRequest struct {
-	OrderId string `json:"orderId"`
+	OrderId string
 }
 
 type AssignedDeliveryResponse struct {
-	CourierId     int       `json:"courierId"`
-	OrderId       string    `json:"orderId"`
-	TransportType string    `json:"transportType"`
-	Deadline      time.Time `json:"deadline"`
+	CourierId     int
+	OrderId       string
+	TransportType string
+	Deadline      time.Time
 }
 
 type UnassignedDeliveryResponse struct {
-	OrderId   string `json:"orderId"`
-	CourierId int    `json:"courierId"`
-	Status    string `json:"status"`
+	OrderId   string
+	CourierId int
+	Status    string
 }

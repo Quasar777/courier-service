@@ -38,19 +38,24 @@ func main() {
 		port = *flagPort
 	}
 
-	pool, err := mustInitPool(context.Background())
+	dbPool, err := mustInitPool(context.Background())
     if err != nil {
         log.Fatal("error connecting to database: ", err)
     }
-    defer pool.Close()
-
-	courierRepository := repository.NewCourierRepository(pool)
-	courierUseCase := usecase.NewCourierUseCase(courierRepository)
-	courier := handler.NewCourierController(courierUseCase)
+    defer dbPool.Close()
 
 	deadlineFactory := usecase.NewDeadlineFactory()
-	deliveryRepository := repository.NewDeliveryRepository(pool)
+
+	// Repositories
+	courierRepository := repository.NewCourierRepository(dbPool)
+	deliveryRepository := repository.NewDeliveryRepository(dbPool)
+
+	// Use Cases
+	courierUseCase := usecase.NewCourierUseCase(courierRepository)
 	deliveryUseCase := usecase.NewDeliveryUseCase(deliveryRepository, courierRepository, deadlineFactory)
+
+	// HTTP Handlers
+	courier := handler.NewCourierController(courierUseCase)
 	delivery := handler.NewDeliveryController(deliveryUseCase)
 	
 	srv := &http.Server{

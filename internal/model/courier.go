@@ -3,29 +3,29 @@ package model
 import "time"
 
 type Courier struct {
-	Id            int       `json:"id"`
-	Name          string    `json:"name"`
-	Lastname      string    `json:"lastname"`
-	Phone         string    `json:"phone"`
-	Status        string    `json:"status"`
-	TransportType string    `json:"transportType"`
-	CreatedAt     time.Time `json:"-"`
-	UpdatedAt     time.Time `json:"-"`
+	Id            int
+	Name          string
+	Lastname      string
+	Phone         string
+	Status        string
+	TransportType string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 type CreateCourierRequest struct {
-	Name          string `json:"name"`
-	Lastname      string `json:"lastname"`
-	Phone         string `json:"phone"`
-	Status        string `json:"status"`
-	TransportType string `json:"transportType"`
+	Name          string
+	Lastname      string
+	Phone         string
+	Status        string
+	TransportType string
 }
 
 type UpdateCourierRequest struct {
-	Id            int    `json:"id"`
-	Name          string `json:"name"`
-	Lastname      string `json:"lastname"`
-	Phone         string `json:"phone"`
-	Status        string `json:"status"`
-	TransportType string `json:"transportType"`
+	Id            int
+	Name          string
+	Lastname      string
+	Phone         string
+	Status        string
+	TransportType string
 }
