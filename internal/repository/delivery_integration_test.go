@@ -45,7 +45,6 @@ func (s *DeliveryRepositoryTestSuite) TestAssign_Success() {
 	s.Equal(courierID, d.CourierId)
 	s.Equal(orderID, d.OrderId)
 
-	// 1) Проверяем, что запись реально в delivery
 	var (
 		dbID       int
 		dbCourier  int
@@ -63,12 +62,8 @@ func (s *DeliveryRepositoryTestSuite) TestAssign_Success() {
 	s.Equal(d.Id, dbID)
 	s.Equal(courierID, dbCourier)
 	s.Equal(orderID, dbOrderID)
-
-	// сравнение "как записано" без учета TZ
 	s.Equal(d.Deadline.Format("2006-01-02 15:04:05"), dbDeadline.Format("2006-01-02 15:04:05"))
 
-
-	// 2) Проверяем, что у курьера статус стал busy
 	var status string
 	err = s.pool.QueryRow(ctx, `
 		SELECT status
@@ -100,32 +95,26 @@ func (s *DeliveryRepositoryTestSuite) TestUnassign_Success() {
 	orderID := "order-unassign-1"
 	deadline := time.Now().Add(30 * time.Minute)
 
-	// Arrange: назначаем курьера (курьер станет busy, запись появится в delivery)
 	_, err := s.repo.AssignCourierWithUpdate(ctx, courierID, orderID, deadline)
 	s.Require().NoError(err)
 
-	// Доп. проверка: courier busy до unassign
 	var before string
 	err = s.pool.QueryRow(ctx, `SELECT status FROM couriers WHERE id = $1`, courierID).Scan(&before)
 	s.Require().NoError(err)
 	s.Equal("busy", before)
 
-	// Act: unassign
 	d, err := s.repo.UnassignWithUpdate(ctx, orderID)
 
-	// Assert: ошибок нет, вернули courier_id
 	s.Require().NoError(err)
 	s.Require().NotNil(d)
 	s.Equal(orderID, d.OrderId)
 	s.Equal(courierID, d.CourierId)
 
-	// 1) Запись из delivery удалена
 	var cnt int
 	err = s.pool.QueryRow(ctx, `SELECT COUNT(*) FROM delivery WHERE order_id = $1`, orderID).Scan(&cnt)
 	s.Require().NoError(err)
 	s.Equal(0, cnt)
 
-	// 2) Курьер снова available
 	var after string
 	err = s.pool.QueryRow(ctx, `SELECT status FROM couriers WHERE id = $1`, courierID).Scan(&after)
 	s.Require().NoError(err)
@@ -239,7 +228,6 @@ func (s *DeliveryRepositoryTestSuite) TestGetCourierIdWithFewestOrders_Success()
 	c2 := s.couriersID[1]
 	c3 := s.couriersID[2]
 
-	// c1: 2 заказа
 	_, err := s.pool.Exec(ctx, `
 		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
 		VALUES ($1, $2, NOW(), NOW() + interval '1 hour'),
@@ -247,16 +235,15 @@ func (s *DeliveryRepositoryTestSuite) TestGetCourierIdWithFewestOrders_Success()
 	`, c1, "order-c1-1", "order-c1-2")
 	s.Require().NoError(err)
 
-	// c2: 1 заказ
 	_, err = s.pool.Exec(ctx, `
 		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
 		VALUES ($1, $2, NOW(), NOW() + interval '1 hour')
 	`, c2, "order-c2-1")
 	s.Require().NoError(err)
 
-	// c3: 0 заказов (ничего не вставляем) => должен быть выбран
 
 	id, err := s.repo.GetCourierIdWithFewestOrders(ctx)
+
 
 	s.Require().NoError(err)
 	s.Equal(c3, id)
@@ -269,11 +256,9 @@ func (s *DeliveryRepositoryTestSuite) TestGetCourierIdWithFewestOrders_IgnoresBu
 	c2 := s.couriersID[1]
 	c3 := s.couriersID[2]
 
-	// Сделаем c3 busy (даже если у него 0 заказов, он должен игнорироваться)
 	_, err := s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy' WHERE id = $1`, c3)
 	s.Require().NoError(err)
 
-	// c1: 2 заказа
 	_, err = s.pool.Exec(ctx, `
 		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
 		VALUES ($1, $2, NOW(), NOW() + interval '1 hour'),
@@ -281,7 +266,6 @@ func (s *DeliveryRepositoryTestSuite) TestGetCourierIdWithFewestOrders_IgnoresBu
 	`, c1, "order1", "order2")
 	s.Require().NoError(err)
 
-	// c2: 1 заказ => должен быть выбран среди available (c3 игнорируем)
 	_, err = s.pool.Exec(ctx, `
 		INSERT INTO delivery (courier_id, order_id, assigned_at, deadline)
 		VALUES ($1, $2, NOW(), NOW() + interval '1 hour')
@@ -297,7 +281,6 @@ func (s *DeliveryRepositoryTestSuite) TestGetCourierIdWithFewestOrders_IgnoresBu
 func (s *DeliveryRepositoryTestSuite) TestGetCourierIdWithFewestOrders_NoAvailable() {
 	ctx := context.Background()
 
-	// Все курьеры busy
 	_, err := s.pool.Exec(ctx, `UPDATE couriers SET status = 'busy'`)
 	s.Require().NoError(err)
 
