@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
 	"github.com/Quasar777/courier-service/internal/usecase"
 	"github.com/Quasar777/courier-service/internal/usecase/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
-
 
 func TestAssignCourier_Success(t *testing.T) {
 	t.Parallel()
@@ -43,14 +43,14 @@ func TestAssignCourier_Success(t *testing.T) {
 		AssignCourierWithUpdate(ctx, 10, orderId, deadline).
 		Return(&model.Delivery{}, nil)
 
-	want := &model.AssignedDeliveryResponse{
+	want := &dto.AssignedDeliveryResponse{
 		CourierId: 10,
 		OrderId: orderId,
 		TransportType: "car",
 		Deadline: deadline,
 	}
 
-	req := model.AssignDeliveryRequest{OrderId: orderId}
+	req := dto.AssignDeliveryRequest{OrderId: orderId}
 	
 	got, err := srv.AssignCourier(ctx, req)
 
@@ -75,7 +75,7 @@ func TestAssignCourier_ErrorOnGetCourierIdWithFewestOrders(t *testing.T) {
 		GetCourierIdWithFewestOrders(ctx).
 		Return(0, repoErr)
 
-	got, err := srv.AssignCourier(ctx, model.AssignDeliveryRequest{OrderId: "AAA555"})
+	got, err := srv.AssignCourier(ctx, dto.AssignDeliveryRequest{OrderId: "AAA555"})
 
 	require.ErrorIs(t, err, repoErr)
 	require.Nil(t, got)
@@ -101,7 +101,7 @@ func TestAssignCourier_ErrorOnGetCourierById(t *testing.T) {
 		GetOneById(ctx, 10).
 		Return(nil, repoErr)
 
-	got, err := srv.AssignCourier(ctx, model.AssignDeliveryRequest{OrderId: "AAA555"})
+	got, err := srv.AssignCourier(ctx, dto.AssignDeliveryRequest{OrderId: "AAA555"})
 
 	require.ErrorIs(t, err, repoErr)
 	require.Nil(t, got)
@@ -137,7 +137,7 @@ func TestAssignCourier_ErrorOnAssignCourier(t *testing.T) {
 		AssignCourierWithUpdate(ctx, courier.Id, gomock.Any(), gomock.Any()).
 		Return(nil, repoErr)
 
-	got, err := srv.AssignCourier(ctx, model.AssignDeliveryRequest{OrderId: "AAA555"})
+	got, err := srv.AssignCourier(ctx, dto.AssignDeliveryRequest{OrderId: "AAA555"})
 
 	require.ErrorIs(t, err, repoErr)
 	require.Nil(t, got)
@@ -160,13 +160,13 @@ func TestUnassignCourier_Success(t *testing.T) {
 		UnassignWithUpdate(ctx, orderId).
 		Return(returned, nil)
 
-	want := &model.UnassignedDeliveryResponse{
+	want := &dto.UnassignedDeliveryResponse{
 		OrderId:   orderId,
 		CourierId: 10,
 		Status:    "unassigned",
 	}
 
-	got, err := srv.UnassignCourier(ctx, model.UnassignDeliveryRequest{OrderId: orderId})
+	got, err := srv.UnassignCourier(ctx, dto.UnassignDeliveryRequest{OrderId: orderId})
 
 	require.NoError(t, err)
 	require.Equal(t, want, got)
@@ -188,7 +188,7 @@ func TestUnassignCourier_Error(t *testing.T) {
 		UnassignWithUpdate(ctx, orderId).
 		Return(nil, repoErr)
 
-	got, err := srv.UnassignCourier(ctx, model.UnassignDeliveryRequest{OrderId: orderId})
+	got, err := srv.UnassignCourier(ctx, dto.UnassignDeliveryRequest{OrderId: orderId})
 
 	require.ErrorIs(t, err, repoErr)
 	require.Nil(t, got)

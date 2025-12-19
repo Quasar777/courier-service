@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
 )
 
@@ -16,7 +17,7 @@ func NewDeliveryController(u DeliveryUseCase) *DeliveryController {
 }
 
 func (c *DeliveryController) Assign(w http.ResponseWriter, r *http.Request) {
-	var req model.AssignDeliveryRequest
+	var req dto.AssignDeliveryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error": "Invalid JSON"}`, http.StatusBadRequest)
 		return
@@ -42,7 +43,7 @@ func (c *DeliveryController) Assign(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *DeliveryController) Unassign(w http.ResponseWriter, r *http.Request) {
-	var req model.UnassignDeliveryRequest 
+	var req dto.UnassignDeliveryRequest 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error": "Invalid JSON"}`, http.StatusBadRequest)
 		return

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Quasar777/courier-service/internal/model"
+	"github.com/Quasar777/courier-service/internal/handler/dto"
 )
 
 type DeliveryUseCase struct {
@@ -22,8 +22,8 @@ func NewDeliveryUseCase(deliveryRepo DeliveryRepository, courierRepo CourierRepo
 	}
 }
 
-func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req model.AssignDeliveryRequest) (*model.AssignedDeliveryResponse, error) {
-	result := model.AssignedDeliveryResponse{}
+func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req dto.AssignDeliveryRequest) (*dto.AssignedDeliveryResponse, error) {
+	result := dto.AssignedDeliveryResponse{}
 
 	id, err := u.CourierRepo.GetCourierIdWithFewestOrders(ctx)
 	if err != nil {
@@ -49,8 +49,8 @@ func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req model.AssignDel
 	return &result, nil
 }
 
-func (u *DeliveryUseCase) UnassignCourier(ctx context.Context, req model.UnassignDeliveryRequest) (*model.UnassignedDeliveryResponse, error) {
-	result := model.UnassignedDeliveryResponse{
+func (u *DeliveryUseCase) UnassignCourier(ctx context.Context, req dto.UnassignDeliveryRequest) (*dto.UnassignedDeliveryResponse, error) {
+	result := dto.UnassignedDeliveryResponse{
 		OrderId: req.OrderId,
 	}
 

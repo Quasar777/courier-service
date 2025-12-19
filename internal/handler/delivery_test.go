@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Quasar777/courier-service/internal/handler"
+	"github.com/Quasar777/courier-service/internal/handler/dto"
 	srvmocks "github.com/Quasar777/courier-service/internal/handler/mocks"
 	"github.com/Quasar777/courier-service/internal/model"
 	"github.com/golang/mock/gomock"
@@ -32,8 +33,8 @@ func TestDelivery_Assign_Success(t *testing.T) {
 	deadline := time.Now().Add(5 * time.Minute)
 
 	mockUC.EXPECT().
-		AssignCourier(gomock.Any(), model.AssignDeliveryRequest{OrderId: "AAA555"}).
-		Return(&model.AssignedDeliveryResponse{
+		AssignCourier(gomock.Any(), dto.AssignDeliveryRequest{OrderId: "AAA555"}).
+		Return(&dto.AssignedDeliveryResponse{
 			CourierId:      10,
 			OrderId:        "AAA555",
 			TransportType:  "car",
@@ -45,7 +46,7 @@ func TestDelivery_Assign_Success(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 	require.Equal(t, "application/json", rr.Header().Get("Content-Type"))
 
-	var got model.AssignedDeliveryResponse
+	var got dto.AssignedDeliveryResponse
 	require.NoError(t, json.NewDecoder(rr.Body).Decode(&got))
 	require.Equal(t, 10, got.CourierId)
 	require.Equal(t, "AAA555", got.OrderId)
@@ -101,7 +102,7 @@ func TestDelivery_Assign_NoAvailableCouriers(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	mockUC.EXPECT().
-		AssignCourier(gomock.Any(), model.AssignDeliveryRequest{OrderId: "AAA555"}).
+		AssignCourier(gomock.Any(), dto.AssignDeliveryRequest{OrderId: "AAA555"}).
 		Return(nil, model.ErrNoAvailableCouriers)
 
 	c.Assign(rr, req)
@@ -122,7 +123,7 @@ func TestDelivery_Assign_DBError(t *testing.T) {
 
 	dbErr := errors.New("db error")
 	mockUC.EXPECT().
-		AssignCourier(gomock.Any(), model.AssignDeliveryRequest{OrderId: "AAA555"}).
+		AssignCourier(gomock.Any(), dto.AssignDeliveryRequest{OrderId: "AAA555"}).
 		Return(nil, dbErr)
 
 	c.Assign(rr, req)
@@ -144,8 +145,8 @@ func TestDelivery_Unassign_Success(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	mockUC.EXPECT().
-		UnassignCourier(gomock.Any(), model.UnassignDeliveryRequest{OrderId: "AAA555"}).
-		Return(&model.UnassignedDeliveryResponse{
+		UnassignCourier(gomock.Any(), dto.UnassignDeliveryRequest{OrderId: "AAA555"}).
+		Return(&dto.UnassignedDeliveryResponse{
 			OrderId:   "AAA555",
 			CourierId: 10,
 			Status:    "unassigned",
@@ -156,9 +157,9 @@ func TestDelivery_Unassign_Success(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 	require.Equal(t, "application/json", rr.Header().Get("Content-Type"))
 
-	var got model.UnassignedDeliveryResponse
+	var got dto.UnassignedDeliveryResponse
 	require.NoError(t, json.NewDecoder(rr.Body).Decode(&got))
-	require.Equal(t, model.UnassignedDeliveryResponse{
+	require.Equal(t, dto.UnassignedDeliveryResponse{
 		OrderId:   "AAA555",
 		CourierId: 10,
 		Status:    "unassigned",
@@ -213,7 +214,7 @@ func TestDelivery_Unassign_NotFound(t *testing.T) {
 	rr := httptest.NewRecorder()
 
 	mockUC.EXPECT().
-		UnassignCourier(gomock.Any(), model.UnassignDeliveryRequest{OrderId: "AAA555"}).
+		UnassignCourier(gomock.Any(), dto.UnassignDeliveryRequest{OrderId: "AAA555"}).
 		Return(nil, model.ErrNoRelationFound)
 
 	c.Unassign(rr, req)
@@ -234,7 +235,7 @@ func TestDelivery_Unassign_DBError(t *testing.T) {
 
 	dbErr := errors.New("db error")
 	mockUC.EXPECT().
-		UnassignCourier(gomock.Any(), model.UnassignDeliveryRequest{OrderId: "AAA555"}).
+		UnassignCourier(gomock.Any(), dto.UnassignDeliveryRequest{OrderId: "AAA555"}).
 		Return(nil, dbErr)
 
 	c.Unassign(rr, req)

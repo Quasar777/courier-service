@@ -133,10 +133,10 @@ func (m *MockDeliveryUseCase) EXPECT() *MockDeliveryUseCaseMockRecorder {
 }
 
 // AssignCourier mocks base method.
-func (m *MockDeliveryUseCase) AssignCourier(ctx context.Context, req model.AssignDeliveryRequest) (*model.AssignedDeliveryResponse, error) {
+func (m *MockDeliveryUseCase) AssignCourier(ctx context.Context, req dto.AssignDeliveryRequest) (*dto.AssignedDeliveryResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AssignCourier", ctx, req)
-	ret0, _ := ret[0].(*model.AssignedDeliveryResponse)
+	ret0, _ := ret[0].(*dto.AssignedDeliveryResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -148,10 +148,10 @@ func (mr *MockDeliveryUseCaseMockRecorder) AssignCourier(ctx, req interface{}) *
 }
 
 // UnassignCourier mocks base method.
-func (m *MockDeliveryUseCase) UnassignCourier(ctx context.Context, req model.UnassignDeliveryRequest) (*model.UnassignedDeliveryResponse, error) {
+func (m *MockDeliveryUseCase) UnassignCourier(ctx context.Context, req dto.UnassignDeliveryRequest) (*dto.UnassignedDeliveryResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UnassignCourier", ctx, req)
-	ret0, _ := ret[0].(*model.UnassignedDeliveryResponse)
+	ret0, _ := ret[0].(*dto.UnassignedDeliveryResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
