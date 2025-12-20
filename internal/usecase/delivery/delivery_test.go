@@ -1,4 +1,4 @@
-package usecase_test
+package delivery_test
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 
 	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
-	"github.com/Quasar777/courier-service/internal/usecase"
-	"github.com/Quasar777/courier-service/internal/usecase/mocks"
+	"github.com/Quasar777/courier-service/internal/usecase/common/mocks"
+	"github.com/Quasar777/courier-service/internal/usecase/delivery"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +21,7 @@ func TestAssignCourier_Success(t *testing.T) {
 	mockCourierRepo := mocks.NewMockCourierRepository(ctrl)
 	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
 	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
-	srv := usecase.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 	orderId := "AAA555"
 	deadline := time.Now().Add(5 * time.Minute)
@@ -69,7 +69,7 @@ func TestAssignCourier_ErrorOnGetCourierIdWithFewestOrders(t *testing.T) {
 	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
 	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
 
-	srv := usecase.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 
 	repoErr := errors.New("db error")
@@ -92,7 +92,7 @@ func TestAssignCourier_ErrorOnGetCourierById(t *testing.T) {
 	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
 	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
 
-	srv := usecase.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 
 	mockCourierRepo.EXPECT().
@@ -118,7 +118,7 @@ func TestAssignCourier_ErrorOnAssignCourier(t *testing.T) {
 	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
 	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
 
-	srv := usecase.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 	deadline := time.Now().Add(5 * time.Minute)
 
@@ -153,7 +153,7 @@ func TestUnassignCourier_Success(t *testing.T) {
 	mockCourierRepo := mocks.NewMockCourierRepository(ctrl)
 	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
 	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
-	srv := usecase.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 
 	orderId := "AAA555"
@@ -182,7 +182,7 @@ func TestUnassignCourier_Error(t *testing.T) {
 	mockCourierRepo := mocks.NewMockCourierRepository(ctrl)
 	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
 	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
-	srv := usecase.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 	orderId := "AAA555"
 
@@ -205,7 +205,7 @@ func TestReleaseExpiredDeliveries_Success(t *testing.T) {
 	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
 	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
 
-	srv := usecase.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 
 	mockCourierRepo.EXPECT().
@@ -225,7 +225,7 @@ func TestReleaseExpiredDeliveries_Error(t *testing.T) {
 	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
 	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
 
-	srv := usecase.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 
 	repoErr := errors.New("db error")
@@ -244,7 +244,7 @@ func TestRunDeliveryChecker_StopsOnContextCancel(t *testing.T) {
 	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
 	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
 
-	srv := usecase.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

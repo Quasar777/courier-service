@@ -1,6 +1,4 @@
-package usecase
-
-// UseCase / Service / Manager - business logic layer
+package courier
 
 import (
 	"context"

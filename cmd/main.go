@@ -14,7 +14,8 @@ import (
 
 	"github.com/Quasar777/courier-service/internal/handler"
 	"github.com/Quasar777/courier-service/internal/repository"
-	"github.com/Quasar777/courier-service/internal/usecase"
+	"github.com/Quasar777/courier-service/internal/usecase/courier"
+	"github.com/Quasar777/courier-service/internal/usecase/delivery"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -44,15 +45,15 @@ func main() {
     }
     defer dbPool.Close()
 
-	deadlineFactory := usecase.NewDeadlineFactory()
+	deadlineFactory := delivery.NewDeadlineFactory()
 
 	// Repositories
 	courierRepository := repository.NewCourierRepository(dbPool)
 	deliveryRepository := repository.NewDeliveryRepository(dbPool)
 
 	// Use Cases
-	courierUseCase := usecase.NewCourierUseCase(courierRepository)
-	deliveryUseCase := usecase.NewDeliveryUseCase(deliveryRepository, courierRepository, deadlineFactory)
+	courierUseCase := courier.NewCourierUseCase(courierRepository)
+	deliveryUseCase := delivery.NewDeliveryUseCase(deliveryRepository, courierRepository, deadlineFactory)
 
 	// HTTP Handlers
 	courier := handler.NewCourierController(courierUseCase)
