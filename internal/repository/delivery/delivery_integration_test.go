@@ -1,4 +1,4 @@
-package repository_test
+package delivery_test
 
 import (
 	"context"
@@ -6,28 +6,25 @@ import (
 	"time"
 
 	"github.com/Quasar777/courier-service/internal/model"
-	"github.com/Quasar777/courier-service/internal/repository"
+	"github.com/Quasar777/courier-service/internal/repository/delivery"
+	"github.com/Quasar777/courier-service/internal/repository/utils"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/suite"
 )
 
 type DeliveryRepositoryTestSuite struct {
 	suite.Suite
 	pool       *pgxpool.Pool
-	repo       *repository.DeliveryRepository
+	repo       *delivery.DeliveryRepository
 	couriersID []int
 }
 
 func (s *DeliveryRepositoryTestSuite) SetupSuite() {
-	err := godotenv.Load("../../.env")
-	s.Require().NoError(err)
-
-	pool, err := mustInitPool(context.Background())
+	pool, err := utils.MustInitPool(context.Background())
 	s.Require().NoError(err)
 
 	s.pool = pool
-	s.repo = repository.NewDeliveryRepository(s.pool)
+	s.repo = delivery.NewDeliveryRepository(s.pool)
 }
 
 func (s *DeliveryRepositoryTestSuite) SetupTest() {

@@ -1,36 +1,31 @@
-package repository_test
+package courier_test
 
 import (
 	"context"
-	"log"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
-	"github.com/Quasar777/courier-service/internal/repository"
+	"github.com/Quasar777/courier-service/internal/repository/courier"
+	"github.com/Quasar777/courier-service/internal/repository/utils"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/suite"
 )
 
 type CourierRepositoryTestSuite struct {
 	suite.Suite
 	pool *pgxpool.Pool
-	repo *repository.CourierRepository
+	repo *courier.CourierRepository
 	couriersId []int
 }
 
 func (s *CourierRepositoryTestSuite) SetupSuite() {
-	err := godotenv.Load("../../.env")
-	s.Require().NoError(err)
-
-	pool, err := mustInitPool(context.Background())
+	pool, err := utils.MustInitPool(context.Background())
 	s.Require().NoError(err)
 
 	s.pool = pool
-	s.repo = repository.NewCourierRepository(s.pool)
+	s.repo = courier.NewCourierRepository(s.pool)
 }
 
 func (s *CourierRepositoryTestSuite) TearDownSuite() {
@@ -540,61 +535,4 @@ func (s *CourierRepositoryTestSuite) TearDownTest() {
 
 	s.couriersId = nil
 	
-}
-
-func getConnectionString() (string, error) {
-	err := godotenv.Load("../../.env")
-	if err != nil {
-		return "", err
-	}
-
-	connString := os.Getenv("DB_CONNECTION_STRING_TEST")
-	if connString == "" {
-		return "", err
-	}
-
-	return connString, nil
-}
-
-func mustInitPool(ctx context.Context) (*pgxpool.Pool, error) {
-	connString, err := getConnectionString()
-	if err != nil {
-		return nil, err
-	}
-
-	cfg, err := pgxpool.ParseConfig(connString)
-	if err != nil {
-		return nil, err
-	}
-	cfg.MaxConns = 10
-	cfg.MaxConnLifetime = time.Hour
-	cfg.MinConns = 5
-
-	pool, err := pgxpool.NewWithConfig(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	pingAttemptsLimit := 3
-	var pingErr error
-
-	for i := range pingAttemptsLimit {
-		pingCtx, pingCancel := context.WithTimeout(context.Background(), 5*time.Second)
-		pingErr = pool.Ping(pingCtx)
-		pingCancel()
-		if pingErr == nil {
-			break
-		}
-		log.Printf("db ping attempt %d failed: %v", i, pingErr)
-		if i < pingAttemptsLimit {
-			time.Sleep(500 * time.Millisecond)
-		}
-	}
-
-	if pingErr != nil {
-		return nil, pingErr
-	}
-
-	log.Println("Database test connection pool established")
-	return pool, nil
 }

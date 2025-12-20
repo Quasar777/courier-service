@@ -13,7 +13,8 @@ import (
 	"time"
 
 	"github.com/Quasar777/courier-service/internal/handler"
-	"github.com/Quasar777/courier-service/internal/repository"
+	courierRepo "github.com/Quasar777/courier-service/internal/repository/courier"
+	deliveryRepo "github.com/Quasar777/courier-service/internal/repository/delivery"
 	"github.com/Quasar777/courier-service/internal/usecase/courier"
 	"github.com/Quasar777/courier-service/internal/usecase/delivery"
 	"github.com/go-chi/chi/v5"
@@ -48,8 +49,8 @@ func main() {
 	deadlineFactory := delivery.NewDeadlineFactory()
 
 	// Repositories
-	courierRepository := repository.NewCourierRepository(dbPool)
-	deliveryRepository := repository.NewDeliveryRepository(dbPool)
+	courierRepository := courierRepo.NewCourierRepository(dbPool)
+	deliveryRepository := deliveryRepo.NewDeliveryRepository(dbPool)
 
 	// Use Cases
 	courierUseCase := courier.NewCourierUseCase(courierRepository)
