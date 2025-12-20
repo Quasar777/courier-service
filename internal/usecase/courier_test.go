@@ -150,18 +150,6 @@ func TestCreateCourier_SuccessWithPassedTransportType(t *testing.T) {
 	require.Equal(t, 1, got)
 }
 
-func TestCreateCourier_ErrMissinRequiredFields(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := usecase.NewCourierUseCase(mockRepo)
-	request := dto.CreateCourierRequest{}
-
-	got, err := s.CreateCourier(t.Context(), request)
-
-	require.ErrorIs(t, err, model.ErrMissingRequiredFields)
-	require.Empty(t, got)
-}
-
 func TestUpdateCourier_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockRepo := mocks.NewMockCourierRepository(ctrl)
@@ -201,20 +189,6 @@ func TestUpdateCourier_Success(t *testing.T) {
 	err := s.UpdateCourier(ctx, req)
 
 	require.NoError(t, err)
-}
-
-func TestUpdateCourier_ErrMissingFields(t *testing.T) {
-	t.Parallel()
-
-	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := usecase.NewCourierUseCase(mockRepo)
-
-	req := dto.UpdateCourierRequest{Id: 10}
-
-	err := s.UpdateCourier(t.Context(), req)
-
-	require.ErrorIs(t, err, model.ErrMissingRequiredFields)
 }
 
 func TestUpdateCourier_GetOneByIdError(t *testing.T) {

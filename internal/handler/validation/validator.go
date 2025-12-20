@@ -19,7 +19,7 @@ func ValidateRequest[T any](req *T) error {
 }
 
 func validateCreate(req *dto.CreateCourierRequest) error {
-	if req.Name == "" && req.Lastname == "" && req.Phone == "" && req.Status == "" && req.TransportType == "" {
+	if req.Name == "" || req.Lastname == "" || req.Phone == "" {
         return model.ErrMissingRequiredFields
     }
 	if err := validateStatus(req.Status); err != nil {
@@ -59,9 +59,7 @@ func validateUpdate(req *dto.UpdateCourierRequest) error {
 
 func validateStatus(status string) error {
 	switch status {
-	case "available", "busy", "paused":
-		return nil
-	case "":
+	case "available", "busy", "paused", "":
 		return nil
 	default:
 		return model.ErrInvalidStatus
@@ -70,9 +68,7 @@ func validateStatus(status string) error {
 
 func validateTransport(t string) error {
 	switch t {
-	case "car", "scooter", "on_foot":
-		return nil
-	case "":
+	case "car", "scooter", "on_foot", "":
 		return nil
 	default:
 		return model.ErrInvalidCourierTransportType

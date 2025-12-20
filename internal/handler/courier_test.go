@@ -226,6 +226,23 @@ func TestCourier_Create_InvalidJSON(t *testing.T) {
 	require.JSONEq(t, `{"error": "Invalid JSON"}`, rr.Body.String())
 }
 
+func TestCourier_Create_MissingRequiredFields(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	mockUseCase := srvmocks.NewMockCourierUseCase(ctrl)
+	c := handler.NewCourierController(mockUseCase)	
+
+	reqBody := `{}`
+	req := httptest.NewRequest(http.MethodPost, "/couriers", strings.NewReader(reqBody))
+	rr := httptest.NewRecorder()
+	
+	c.Create(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+	require.JSONEq(t, `{"error": "Missing required fields"}`, rr.Body.String())
+}
+
 func TestCourier_Create_Error(t *testing.T) {
 	t.Parallel()
 
@@ -311,15 +328,14 @@ func TestCourier_Update_InvalidJSON(t *testing.T) {
 	require.JSONEq(t, `{"error":"Invalid JSON"}`, rr.Body.String())
 }
 
-func TestCourier_Update_IdRequired(t *testing.T) {
+func TestCourier_Update_MissingRequiredFields(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
 	mockUC := srvmocks.NewMockCourierUseCase(ctrl)
 	c := handler.NewCourierController(mockUC)
 
-	reqBody := `{"name":"X"}`
-	req := httptest.NewRequest(http.MethodPut, "/couriers", strings.NewReader(reqBody))
+	req := httptest.NewRequest(http.MethodPut, "/couriers", strings.NewReader("{}"))
 	rr := httptest.NewRecorder()
 
 	mockUC.EXPECT().UpdateCourier(gomock.Any(), gomock.Any()).Times(0)
@@ -327,7 +343,7 @@ func TestCourier_Update_IdRequired(t *testing.T) {
 	c.Update(rr, req)
 
 	require.Equal(t, http.StatusBadRequest, rr.Code)
-	require.JSONEq(t, `{"error":"Id is required"}`, rr.Body.String())
+	require.JSONEq(t, `{"error": "Missing required fields"}`, rr.Body.String())
 }
 
 func TestCourier_Update_NotFound(t *testing.T) {

@@ -30,10 +30,6 @@ func (u *CourierUseCase) GetCouriers(ctx context.Context) ([]model.Courier, erro
 }
 
 func (u *CourierUseCase) CreateCourier(ctx context.Context, req dto.CreateCourierRequest) (int, error) {
-	if req.Name == "" || req.Lastname == "" || req.Phone == "" {
-        return 0, model.ErrMissingRequiredFields
-    }
-
 	if req.Status == "" {
 		req.Status = "available"
 	}

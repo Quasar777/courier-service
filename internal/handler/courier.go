@@ -91,11 +91,7 @@ func (c *CourierController) Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Invalid JSON"}`, http.StatusBadRequest)
 		return
 	}
-	if req.Id == 0 {
-		http.Error(w, `{"error": "Id is required"}`, http.StatusBadRequest)
-		return
-	}
-
+	
 	if err := validation.ValidateRequest[dto.UpdateCourierRequest](&req); err != nil {
 		responseErrorJSON(w, err)
 		return
