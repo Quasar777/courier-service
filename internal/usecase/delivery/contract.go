@@ -18,6 +18,11 @@ type DeliveryRepository interface {
 	UnassignWithUpdate(ctx context.Context, orderId string) (*model.Delivery, error)
 }
 
-type IDeadlineFactory interface {
-	Deadline(now time.Time, transportType string) time.Time
+
+type DeadlineCalculator interface {
+	CalculateDeadline() time.Time
+}
+
+type deadlineCalculatorFactory interface {
+	GetDeliveryCalculator(courierType model.CourierTransportType) DeadlineCalculator
 }

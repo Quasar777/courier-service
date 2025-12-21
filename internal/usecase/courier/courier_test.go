@@ -1,4 +1,4 @@
-package courier_test
+package courier
 
 import (
 	"errors"
@@ -6,8 +6,6 @@ import (
 
 	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
-	"github.com/Quasar777/courier-service/internal/usecase/courier"
-	"github.com/Quasar777/courier-service/internal/usecase/common/mocks"
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
@@ -16,8 +14,8 @@ import (
 
 func TestGetCourier_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := courier.NewCourierUseCase(mockRepo)
+	mockRepo := NewMockCourierRepository(ctrl)
+	s := NewCourierUseCase(mockRepo)
 	ctx := t.Context()
 	expected := &model.Courier{Id: 5}
 	mockRepo.EXPECT().
@@ -32,8 +30,8 @@ func TestGetCourier_Success(t *testing.T) {
 
 func TestGetCourier_Error(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := courier.NewCourierUseCase(mockRepo)
+	mockRepo := NewMockCourierRepository(ctrl)
+	s := NewCourierUseCase(mockRepo)
 	repoErr := errors.New("Database error")
 	ctx := t.Context()
 	mockRepo.EXPECT().
@@ -48,8 +46,8 @@ func TestGetCourier_Error(t *testing.T) {
 
 func TestGetCourier_NotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := courier.NewCourierUseCase(mockRepo)
+	mockRepo := NewMockCourierRepository(ctrl)
+	s := NewCourierUseCase(mockRepo)
 	ctx := t.Context()
 	mockRepo.EXPECT().GetOneById(ctx, 10).Return(nil, model.ErrCourierNotFound)
 
@@ -61,8 +59,8 @@ func TestGetCourier_NotFound(t *testing.T) {
 
 func TestGetCourier_InvalidId(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := courier.NewCourierUseCase(mockRepo)
+	mockRepo := NewMockCourierRepository(ctrl)
+	s := NewCourierUseCase(mockRepo)
 
 	got, err := s.GetCourier(t.Context(), -7)
 
@@ -72,8 +70,8 @@ func TestGetCourier_InvalidId(t *testing.T) {
 
 func TestCreateCourier_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := courier.NewCourierUseCase(mockRepo)
+	mockRepo := NewMockCourierRepository(ctrl)
+	s := NewCourierUseCase(mockRepo)
 	request := dto.CreateCourierRequest{
 		Name: "Andrew",
 		Lastname: "Ravshanov",
@@ -98,8 +96,8 @@ func TestCreateCourier_Success(t *testing.T) {
 
 func TestCreateCourier_SuccessWithPassedStatus(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := courier.NewCourierUseCase(mockRepo)
+	mockRepo := NewMockCourierRepository(ctrl)
+	s := NewCourierUseCase(mockRepo)
 	request := dto.CreateCourierRequest{
 		Name: "Andrew",
 		Lastname: "Ravshanov",
@@ -125,8 +123,8 @@ func TestCreateCourier_SuccessWithPassedStatus(t *testing.T) {
 
 func TestCreateCourier_SuccessWithPassedTransportType(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := courier.NewCourierUseCase(mockRepo)
+	mockRepo := NewMockCourierRepository(ctrl)
+	s := NewCourierUseCase(mockRepo)
 	request := dto.CreateCourierRequest{
 		Name: "Andrew",
 		Lastname: "Ravshanov",
@@ -152,8 +150,8 @@ func TestCreateCourier_SuccessWithPassedTransportType(t *testing.T) {
 
 func TestUpdateCourier_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := courier.NewCourierUseCase(mockRepo)
+	mockRepo := NewMockCourierRepository(ctrl)
+	s := NewCourierUseCase(mockRepo)
 	ctx := t.Context()
 	req := dto.UpdateCourierRequest{
 		Id:       10,
@@ -195,8 +193,8 @@ func TestUpdateCourier_GetOneByIdError(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := courier.NewCourierUseCase(mockRepo)
+	mockRepo := NewMockCourierRepository(ctrl)
+	s := NewCourierUseCase(mockRepo)
 
 	ctx := t.Context()
 	req := dto.UpdateCourierRequest{
@@ -218,8 +216,8 @@ func TestUpdateCourier_NotFound(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := courier.NewCourierUseCase(mockRepo)
+	mockRepo := NewMockCourierRepository(ctrl)
+	s := NewCourierUseCase(mockRepo)
 
 	ctx := t.Context()
 	req := dto.UpdateCourierRequest{
@@ -240,8 +238,8 @@ func TestUpdateCourier_UpdateError(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := courier.NewCourierUseCase(mockRepo)
+	mockRepo := NewMockCourierRepository(ctrl)
+	s := NewCourierUseCase(mockRepo)
 
 	ctx := t.Context()
 	req := dto.UpdateCourierRequest{
@@ -285,8 +283,8 @@ func TestUpdateCourier_AllFieldsProvided(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := courier.NewCourierUseCase(mockRepo)
+	mockRepo := NewMockCourierRepository(ctrl)
+	s := NewCourierUseCase(mockRepo)
 
 	ctx := t.Context()
 	req := dto.UpdateCourierRequest{
@@ -315,8 +313,8 @@ func TestDeleteCourier_Success(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := courier.NewCourierUseCase(mockRepo)
+	mockRepo := NewMockCourierRepository(ctrl)
+	s := NewCourierUseCase(mockRepo)
 
 	ctx := t.Context()
 	courierId := 10
@@ -334,8 +332,8 @@ func TestDeleteCourier_Error(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockRepo := mocks.NewMockCourierRepository(ctrl)
-	s := courier.NewCourierUseCase(mockRepo)
+	mockRepo := NewMockCourierRepository(ctrl)
+	s := NewCourierUseCase(mockRepo)
 
 	ctx := t.Context()
 	courierId := 10

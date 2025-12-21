@@ -46,7 +46,7 @@ func main() {
     }
     defer dbPool.Close()
 
-	deadlineFactory := delivery.NewDeadlineFactory()
+	deadlineFactory := delivery.NewFactory()
 
 	// Repositories
 	courierRepository := courierRepo.NewCourierRepository(dbPool)

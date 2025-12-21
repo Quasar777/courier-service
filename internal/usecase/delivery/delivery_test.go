@@ -1,4 +1,4 @@
-package delivery_test
+package delivery
 
 import (
 	"context"
@@ -8,25 +8,28 @@ import (
 
 	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
-	"github.com/Quasar777/courier-service/internal/usecase/common/mocks"
-	"github.com/Quasar777/courier-service/internal/usecase/delivery"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAssignCourier_Success(t *testing.T) {
 	t.Parallel()
-	
+
 	ctrl := gomock.NewController(t)
-	mockCourierRepo := mocks.NewMockCourierRepository(ctrl)
-	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
-	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
-	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+
+	mockCourierRepo := NewMockCourierRepository(ctrl)
+	mockDeliveryRepo := NewMockDeliveryRepository(ctrl)
+	mockDeadlineFactory := NewMockdeadlineCalculatorFactory(ctrl) // <-- новое имя мока фабрики
+	mockDeadlineCalc := NewMockDeadlineCalculator(ctrl)           // <-- новый мок калькулятора
+
+	srv := NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+
 	ctx := t.Context()
 	orderId := "AAA555"
-	deadline := time.Now().Add(5 * time.Minute)
+	deadline := time.Date(2030, 1, 1, 10, 0, 0, 0, time.UTC) // фиксированное время, чтобы тест был стабильным
 
-	courierWithFewestOrders := &model.Courier{Id: 10, TransportType: "car"}
+	courierWithFewestOrders := &model.Courier{Id: 10, TransportType: model.TransportTypeCar}
+
 	mockCourierRepo.EXPECT().
 		GetCourierIdWithFewestOrders(ctx).
 		Return(10, nil)
@@ -35,8 +38,14 @@ func TestAssignCourier_Success(t *testing.T) {
 		GetOneById(ctx, 10).
 		Return(courierWithFewestOrders, nil)
 
+	// Новая логика: фабрика возвращает калькулятор
 	mockDeadlineFactory.EXPECT().
-		Deadline(gomock.Any(), string(courierWithFewestOrders.TransportType)).
+		GetDeliveryCalculator(courierWithFewestOrders.TransportType).
+		Return(mockDeadlineCalc)
+
+	// ...а калькулятор возвращает дедлайн
+	mockDeadlineCalc.EXPECT().
+		CalculateDeadline().
 		Return(deadline)
 
 	mockDeliveryRepo.EXPECT().
@@ -44,14 +53,14 @@ func TestAssignCourier_Success(t *testing.T) {
 		Return(&model.Delivery{}, nil)
 
 	want := &dto.AssignedDeliveryResponse{
-		CourierId: 10,
-		OrderId: orderId,
-		TransportType: "car",
-		Deadline: deadline,
+		CourierId:      10,
+		OrderId:        orderId,
+		TransportType:  "car",
+		Deadline:       deadline,
 	}
 
 	req := dto.AssignDeliveryRequest{OrderId: orderId}
-	
+
 	got, err := srv.AssignCourier(ctx, req)
 
 	require.NoError(t, err)
@@ -65,11 +74,12 @@ func TestAssignCourier_ErrorOnGetCourierIdWithFewestOrders(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockCourierRepo := mocks.NewMockCourierRepository(ctrl)
-	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
-	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
 
-	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	mockCourierRepo := NewMockCourierRepository(ctrl)
+	mockDeliveryRepo := NewMockDeliveryRepository(ctrl)
+	mockDeadlineFactory := NewMockdeadlineCalculatorFactory(ctrl)
+
+	srv := NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 
 	repoErr := errors.New("db error")
@@ -88,11 +98,12 @@ func TestAssignCourier_ErrorOnGetCourierById(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockCourierRepo := mocks.NewMockCourierRepository(ctrl)
-	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
-	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
 
-	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	mockCourierRepo := NewMockCourierRepository(ctrl)
+	mockDeliveryRepo := NewMockDeliveryRepository(ctrl)
+	mockDeadlineFactory := NewMockdeadlineCalculatorFactory(ctrl)
+
+	srv := NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 
 	mockCourierRepo.EXPECT().
@@ -114,25 +125,32 @@ func TestAssignCourier_ErrorOnAssignCourier(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockCourierRepo := mocks.NewMockCourierRepository(ctrl)
-	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
-	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
 
-	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	mockCourierRepo := NewMockCourierRepository(ctrl)
+	mockDeliveryRepo := NewMockDeliveryRepository(ctrl)
+	mockDeadlineFactory := NewMockdeadlineCalculatorFactory(ctrl)
+	mockDeadlineCalc := NewMockDeadlineCalculator(ctrl)
+
+	srv := NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
-	deadline := time.Now().Add(5 * time.Minute)
+
+	deadline := time.Date(2030, 1, 1, 10, 0, 0, 0, time.UTC)
 
 	mockCourierRepo.EXPECT().
 		GetCourierIdWithFewestOrders(ctx).
 		Return(10, nil)
 
-	courier := &model.Courier{Id: 10, TransportType: "car"}
+	courier := &model.Courier{Id: 10, TransportType: model.TransportTypeCar}
 	mockCourierRepo.EXPECT().
 		GetOneById(ctx, 10).
 		Return(courier, nil)
 
 	mockDeadlineFactory.EXPECT().
-		Deadline(gomock.Any(), string(courier.TransportType)).
+		GetDeliveryCalculator(courier.TransportType).
+		Return(mockDeadlineCalc)
+
+	mockDeadlineCalc.EXPECT().
+		CalculateDeadline().
 		Return(deadline)
 
 	repoErr := errors.New("db error")
@@ -150,10 +168,12 @@ func TestUnassignCourier_Success(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockCourierRepo := mocks.NewMockCourierRepository(ctrl)
-	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
-	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
-	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+
+	mockCourierRepo := NewMockCourierRepository(ctrl)
+	mockDeliveryRepo := NewMockDeliveryRepository(ctrl)
+	mockDeadlineFactory := NewMockdeadlineCalculatorFactory(ctrl)
+
+	srv := NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 
 	orderId := "AAA555"
@@ -179,11 +199,14 @@ func TestUnassignCourier_Error(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockCourierRepo := mocks.NewMockCourierRepository(ctrl)
-	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
-	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
-	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+
+	mockCourierRepo := NewMockCourierRepository(ctrl)
+	mockDeliveryRepo := NewMockDeliveryRepository(ctrl)
+	mockDeadlineFactory := NewMockdeadlineCalculatorFactory(ctrl)
+
+	srv := NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
+
 	orderId := "AAA555"
 
 	repoErr := errors.New("db error")
@@ -201,11 +224,12 @@ func TestReleaseExpiredDeliveries_Success(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockCourierRepo := mocks.NewMockCourierRepository(ctrl)
-	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
-	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
 
-	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	mockCourierRepo := NewMockCourierRepository(ctrl)
+	mockDeliveryRepo := NewMockDeliveryRepository(ctrl)
+	mockDeadlineFactory := NewMockdeadlineCalculatorFactory(ctrl)
+
+	srv := NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 
 	mockCourierRepo.EXPECT().
@@ -221,11 +245,12 @@ func TestReleaseExpiredDeliveries_Error(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockCourierRepo := mocks.NewMockCourierRepository(ctrl)
-	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
-	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
 
-	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	mockCourierRepo := NewMockCourierRepository(ctrl)
+	mockDeliveryRepo := NewMockDeliveryRepository(ctrl)
+	mockDeadlineFactory := NewMockdeadlineCalculatorFactory(ctrl)
+
+	srv := NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 	ctx := t.Context()
 
 	repoErr := errors.New("db error")
@@ -240,11 +265,12 @@ func TestReleaseExpiredDeliveries_Error(t *testing.T) {
 
 func TestRunDeliveryChecker_StopsOnContextCancel(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	mockCourierRepo := mocks.NewMockCourierRepository(ctrl)
-	mockDeliveryRepo := mocks.NewMockDeliveryRepository(ctrl)
-	mockDeadlineFactory := mocks.NewMockIDeadlineFactory(ctrl)
 
-	srv := delivery.NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
+	mockCourierRepo := NewMockCourierRepository(ctrl)
+	mockDeliveryRepo := NewMockDeliveryRepository(ctrl)
+	mockDeadlineFactory := NewMockdeadlineCalculatorFactory(ctrl)
+
+	srv := NewDeliveryUseCase(mockDeliveryRepo, mockCourierRepo, mockDeadlineFactory)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -254,7 +280,6 @@ func TestRunDeliveryChecker_StopsOnContextCancel(t *testing.T) {
 	mockCourierRepo.EXPECT().
 		ReleaseCouriers(gomock.Any()).
 		DoAndReturn(func(context.Context) error {
-			// сигналим, что тик случился
 			select {
 			case called <- struct{}{}:
 			default:

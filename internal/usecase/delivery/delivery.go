@@ -11,10 +11,10 @@ import (
 type DeliveryUseCase struct {
 	DeliveryRepo DeliveryRepository
 	CourierRepo CourierRepository
-	DeadlineFactory IDeadlineFactory
+	DeadlineFactory deadlineCalculatorFactory
 }
 
-func NewDeliveryUseCase(deliveryRepo DeliveryRepository, courierRepo CourierRepository, deadlineFactory IDeadlineFactory) *DeliveryUseCase {
+func NewDeliveryUseCase(deliveryRepo DeliveryRepository, courierRepo CourierRepository, deadlineFactory deadlineCalculatorFactory) *DeliveryUseCase {
 	return &DeliveryUseCase{
 		DeliveryRepo: deliveryRepo,
 		CourierRepo: courierRepo,
@@ -39,7 +39,10 @@ func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req dto.AssignDeliv
 	}
 
 	result.TransportType = string(assignedCourier.TransportType)
-	result.Deadline = u.DeadlineFactory.Deadline(time.Now(), result.TransportType)
+
+	dc := u.DeadlineFactory.GetDeliveryCalculator(assignedCourier.TransportType)
+	// result.Deadline = u.DeadlineFactory.Deadline(time.Now(), result.TransportType)
+	result.Deadline = dc.CalculateDeadline()
 
 	_, err = u.DeliveryRepo.AssignCourierWithUpdate(ctx, result.CourierId, result.OrderId, result.Deadline)
 	if err != nil {
