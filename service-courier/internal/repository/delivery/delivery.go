@@ -26,6 +26,8 @@ func (r *DeliveryRepository) AssignCourierWithUpdate(ctx context.Context, courie
 	}
 	defer tx.Rollback(ctx)
 
+	// Да, тут конечно лучше сделать репо максимально "тупым"
+	// Но мне лень сейчас делать transaction manager :(
 	res, err := tx.Exec(ctx, `
 		UPDATE couriers
 		SET status = 'busy'

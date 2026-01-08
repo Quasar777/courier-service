@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -84,7 +83,26 @@ func (r *CourierRepository) GetAll(ctx context.Context) ([]model.Courier, error)
 	return couriers, nil
 }
 
-func (r *CourierRepository) Create(ctx context.Context, courier *dto.CreateCourierRequest) (int, error) {
+// func (r *CourierRepository) Create(ctx context.Context, courier uc.CreateCourierInput) (int, error) {
+// 	var id int
+// 	err := r.pool.QueryRow(ctx, `
+// 		INSERT INTO couriers (name, lastname, phone, status, transport_type) 
+// 		VALUES ($1, $2, $3, $4, $5) 
+// 		RETURNING id
+// 	`, courier.Name, courier.Lastname, courier.Phone, courier.Status, courier.TransportType).Scan(&id)
+
+// 	if err != nil {
+// 		fmt.Printf("err type=%T err=%q\n", err, err.Error())
+// 		if strings.Contains(err.Error(), "duplicate key value") {
+// 			return 0, model.ErrPhoneConflict
+// 		}
+// 		return 0, model.ErrInternal
+// 	}
+
+// 	return id, nil
+// }
+
+func (r *CourierRepository) Create(ctx context.Context, courier model.Courier) (int, error) {
 	var id int
 	err := r.pool.QueryRow(ctx, `
 		INSERT INTO couriers (name, lastname, phone, status, transport_type) 
@@ -97,13 +115,13 @@ func (r *CourierRepository) Create(ctx context.Context, courier *dto.CreateCouri
 		if strings.Contains(err.Error(), "duplicate key value") {
 			return 0, model.ErrPhoneConflict
 		}
-		return 0, fmt.Errorf("database error: %w", err)
+		return 0, model.ErrInternal
 	}
 
 	return id, nil
 }
 
-func (r *CourierRepository) Update(ctx context.Context, courier *dto.UpdateCourierRequest) error {
+func (r *CourierRepository) Update(ctx context.Context, courier model.Courier) error {
 	result, err := r.pool.Exec(ctx, `
 		UPDATE couriers
 		SET name = $1, lastname = $2, phone = $3, status = $4, transport_type = $5
@@ -119,7 +137,7 @@ func (r *CourierRepository) Update(ctx context.Context, courier *dto.UpdateCouri
 		if strings.Contains(err.Error(), "duplicate key value") {
 			return model.ErrPhoneConflict
 		}
-		return fmt.Errorf("database error: %w", err)
+		return model.ErrInternal
 	}
 
 	if result.RowsAffected() == 0 {
@@ -146,7 +164,7 @@ func (r *CourierRepository) Delete(ctx context.Context, id int) error {
 	`, id)
 
 	if err != nil {
-		return fmt.Errorf("database error: %w", err)
+		return model.ErrInternal
 	}
 
 	if result.RowsAffected() == 0 {
@@ -168,7 +186,7 @@ func (r *CourierRepository) ReleaseCouriers(ctx context.Context) error {
 	`)
 
 	if err != nil {
-		return fmt.Errorf("database error: %w", err)
+		return model.ErrInternal
 	}
 
 	return nil
@@ -191,7 +209,7 @@ func (r *CourierRepository) GetCourierIdWithFewestOrders(ctx context.Context) (i
 		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, model.ErrNoAvailableCouriers
 		}
-		return 0, fmt.Errorf("database error: %w", err)
+		return 0, model.ErrInternal
 	}
 
 	return id, nil

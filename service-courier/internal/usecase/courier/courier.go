@@ -4,9 +4,25 @@ import (
 	"context"
 	"unicode"
 
-	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
 )
+
+type CreateCourierInput struct {
+	Name          string
+    Lastname      string
+    Phone         string
+    Status        string
+    TransportType string
+}
+
+type UpdateCourierInput struct {
+	ID            int
+	Name          string
+    Lastname      string
+    Phone         string
+    Status        string
+    TransportType string
+}
 
 type CourierUseCase struct {
 	repository CourierRepository
@@ -33,7 +49,7 @@ func (u *CourierUseCase) GetCouriers(ctx context.Context) ([]model.Courier, erro
 	return u.repository.GetAll(ctx)
 }
 
-func (u *CourierUseCase) CreateCourier(ctx context.Context, req dto.CreateCourierRequest) (int, error) {
+func (u *CourierUseCase) CreateCourier(ctx context.Context, req CreateCourierInput) (int, error) {
 	if req.Name == "" || req.Lastname == "" || req.Phone == "" {
         return 0, model.ErrMissingRequiredFields
     }
@@ -65,15 +81,16 @@ func (u *CourierUseCase) CreateCourier(ctx context.Context, req dto.CreateCourie
 		req.TransportType = "on_foot"
 	}
 	
-	return u.repository.Create(ctx, &req)
+	toRepoInput := toRepoCreateCourierModel(req)
+	return u.repository.Create(ctx, toRepoInput)
 }
 
-func (u *CourierUseCase) UpdateCourier(ctx context.Context, req dto.UpdateCourierRequest) error {
-	if req.Id <= 0 {
+func (u *CourierUseCase) UpdateCourier(ctx context.Context, req UpdateCourierInput) error {
+	if req.ID <= 0 {
 		return model.ErrMissingRequiredFields
 	}
 
-	existingCourier, err := u.repository.GetOneById(ctx, req.Id)
+	existingCourier, err := u.repository.GetOneById(ctx, req.ID)
 	if err != nil {
 		return err
 	}
@@ -117,8 +134,9 @@ func (u *CourierUseCase) UpdateCourier(ctx context.Context, req dto.UpdateCourie
 			return model.ErrInvalidCourierTransportType
 		}
 	}
- 
-	return u.repository.Update(ctx, &req)
+	
+	toRepoInput := toRepoUpdateCourierModel(req)
+	return u.repository.Update(ctx, toRepoInput)
 }
 
 func (u *CourierUseCase) DeleteCourier(ctx context.Context, id int) error {
@@ -180,4 +198,24 @@ func isPhoneValid(s string) bool {
 		}
 	}
 	return true
+}
+
+func toRepoCreateCourierModel(r CreateCourierInput) model.Courier {
+	return model.Courier{
+		Name: r.Name,
+		Lastname: r.Lastname,
+		Phone: r.Phone,
+		Status: model.CourierStatus(r.Status),
+		TransportType: model.CourierTransportType(r.TransportType),
+	}
+}
+
+func toRepoUpdateCourierModel(r UpdateCourierInput) model.Courier {
+	return model.Courier{
+		Name: r.Name,
+		Lastname: r.Lastname,
+		Phone: r.Phone,
+		Status: model.CourierStatus(r.Status),
+		TransportType: model.CourierTransportType(r.TransportType),
+	}
 }

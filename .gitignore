@@ -1,3 +1,4 @@
 *.env
 
+# macos
 .DS_Store

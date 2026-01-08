@@ -7,6 +7,7 @@ import (
 
 	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
+	uc "github.com/Quasar777/courier-service/internal/usecase/courier"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -49,13 +50,15 @@ func (c *CourierController) GetMany(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *CourierController) Create(w http.ResponseWriter, r *http.Request) {
-	var reqCourier dto.CreateCourierRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqCourier); err != nil {
+	var req dto.CreateCourierRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		responseErrorJSON(w, model.ErrInvalidJSON)
 		return
 	}
 
-	id, err := c.useCase.CreateCourier(r.Context(), reqCourier)
+
+	input := toUseCaseCreateModel(req)
+	id, err := c.useCase.CreateCourier(r.Context(), input)
 	if err != nil {
 		responseErrorJSON(w, err)
 		return
@@ -76,7 +79,8 @@ func (c *CourierController) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := c.useCase.UpdateCourier(r.Context(), req)
+	input := toUseCaseUpdateModel(req)
+	err := c.useCase.UpdateCourier(r.Context(), input)
 
 	if err != nil {
 		responseErrorJSON(w, err)
@@ -109,4 +113,29 @@ func (c *CourierController) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, response)
+}
+
+func toUseCaseCreateModel(r dto.CreateCourierRequest) uc.CreateCourierInput {
+	res := uc.CreateCourierInput{
+		Name: r.Name,
+		Lastname: r.Lastname,
+		Phone: r.Phone,
+		Status: r.Status,
+		TransportType: r.TransportType,
+	}
+
+	return res
+}
+
+func toUseCaseUpdateModel(r dto.UpdateCourierRequest) uc.UpdateCourierInput {
+	res := uc.UpdateCourierInput{
+		ID: r.Id,
+		Name: r.Name,
+		Lastname: r.Lastname,
+		Phone: r.Phone,
+		Status: r.Status,
+		TransportType: r.TransportType,
+	}
+
+	return res
 }
