@@ -16,6 +16,7 @@ import (
 	deliveryHandler "github.com/Quasar777/courier-service/internal/handler/delivery"
 	courierRepo "github.com/Quasar777/courier-service/internal/repository/courier"
 	deliveryRepo "github.com/Quasar777/courier-service/internal/repository/delivery"
+	worker "github.com/Quasar777/courier-service/internal/usecase/delivery/worker"
 	"github.com/Quasar777/courier-service/internal/usecase/courier"
 	"github.com/Quasar777/courier-service/internal/usecase/delivery"
 	"github.com/go-chi/chi/v5"
@@ -58,6 +59,7 @@ func main() {
 	// Use Cases
 	courierUseCase := courier.NewCourierUseCase(courierRepository)
 	deliveryUseCase := delivery.NewDeliveryUseCase(deliveryRepository, courierRepository, deadlineFactory)
+	worker := worker.NewWorker(courierRepository)
 
 	// HTTP Handlers
 	courier := courierHandler.NewCourierController(courierUseCase)
@@ -87,7 +89,7 @@ func main() {
 		
 		interval := time.Duration(intervalSec) * time.Second
 		
-		deliveryUseCase.RunDeliveryChecker(ctx, interval)
+		worker.RunDeliveryChecker(ctx, interval)
 	}()
 	
 	<-ctx.Done()

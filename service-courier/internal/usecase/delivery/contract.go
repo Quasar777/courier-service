@@ -18,7 +18,6 @@ type DeliveryRepository interface {
 	UnassignWithUpdate(ctx context.Context, orderId string) (*model.Delivery, error)
 }
 
-
 type DeadlineCalculator interface {
 	CalculateDeadline() time.Time
 }

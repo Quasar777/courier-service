@@ -18,6 +18,7 @@ var (
 	jsonErrInternalServer      = ErrorResponse{Error: "Internal server error"}
 	jsonErrInvalidJSON         = ErrorResponse{Error: "Invalid JSON"}
 	jsonErrMissingFields       = ErrorResponse{Error: "Missing required fields"}
+	jsonErrInvalidOrderID      = ErrorResponse{Error: "Invalid order id"}
 )
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
@@ -41,6 +42,9 @@ func responseErrorJSON(w http.ResponseWriter, err error) {
 
 	case errors.Is(err, model.ErrNoRelationFound):
 		writeJSON(w, http.StatusNotFound, jsonErrDeliveryNotFound)
+	
+	case errors.Is(err, model.ErrInvalidOrderID):
+		writeJSON(w, http.StatusBadRequest, jsonErrInvalidOrderID)
 
 	case errors.Is(err, model.ErrInternal):
 		writeJSON(w, http.StatusInternalServerError, jsonErrInternalServer)

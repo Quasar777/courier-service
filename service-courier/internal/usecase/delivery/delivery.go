@@ -3,9 +3,9 @@ package delivery
 import (
 	"context"
 	"fmt"
-	"time"
-
+	
 	"github.com/Quasar777/courier-service/internal/handler/dto"
+	"github.com/Quasar777/courier-service/internal/model"
 )
 
 type DeliveryUseCase struct {
@@ -23,6 +23,10 @@ func NewDeliveryUseCase(deliveryRepo DeliveryRepository, courierRepo CourierRepo
 }
 
 func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req dto.AssignDeliveryRequest) (*dto.AssignedDeliveryResponse, error) {
+	if !isOrderIDValid(req.OrderId) {
+		return nil, model.ErrInvalidOrderID
+	}
+	
 	result := dto.AssignedDeliveryResponse{}
 
 	id, err := u.CourierRepo.GetCourierIdWithFewestOrders(ctx)
@@ -41,7 +45,7 @@ func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req dto.AssignDeliv
 	result.TransportType = string(assignedCourier.TransportType)
 
 	dc := u.DeadlineFactory.GetDeliveryCalculator(assignedCourier.TransportType)
-	// result.Deadline = u.DeadlineFactory.Deadline(time.Now(), result.TransportType)
+	
 	result.Deadline = dc.CalculateDeadline()
 
 	_, err = u.DeliveryRepo.AssignCourierWithUpdate(ctx, result.CourierId, result.OrderId, result.Deadline)
@@ -53,6 +57,10 @@ func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req dto.AssignDeliv
 }
 
 func (u *DeliveryUseCase) UnassignCourier(ctx context.Context, req dto.UnassignDeliveryRequest) (*dto.UnassignedDeliveryResponse, error) {
+	if !isOrderIDValid(req.OrderId) {
+		return nil, model.ErrInvalidOrderID
+	}
+
 	result := dto.UnassignedDeliveryResponse{
 		OrderId: req.OrderId,
 	}
@@ -69,25 +77,24 @@ func (u *DeliveryUseCase) UnassignCourier(ctx context.Context, req dto.UnassignD
 	return &result, nil
 }
 
-func (u *DeliveryUseCase) RunDeliveryChecker(ctx context.Context, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+// Order ID должен быть в формате "XXXXXYYYYY".
+// "X" - буквы латинского алфавита, "Y" - цифры
+func isOrderIDValid(id string) bool {
+	if len(id) != 10 {
+		return false
+	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			fmt.Println("stopping ticker")
-			return
-		case <-ticker.C:
-			err := u.ReleaseExpiredDeliveries(ctx)
-			if err != nil {
-				fmt.Println("failed to release expired deliveries:", err)
-				return
-			}
+	for i := 0; i < 5; i++ {
+		if id[i] < 'A' || (id[i] > 'Z' && id[i] < 'a') || id[i] > 'z' {
+			return false
 		}
 	}
-}
 
-func (u *DeliveryUseCase) ReleaseExpiredDeliveries(ctx context.Context) error {
-    return u.CourierRepo.ReleaseCouriers(ctx)
+	for i := 5; i < 10; i++ {
+		if id[i] < '0' || id[i] > '9' {
+			return false
+		}
+	}
+
+	return true
 }

@@ -41,7 +41,8 @@ func (u *CourierUseCase) CreateCourier(ctx context.Context, req dto.CreateCourie
 	if !IsNameValid(req.Name) {
 		return 0, model.ErrInvalidCourierName
 	}
-
+	// Это не ошибка. Я сам выставляю бизнес требования >_<
+	// Пусть фамилия валидируется так же как имя
 	if !IsNameValid(req.Lastname) {
 		return 0, model.ErrInvalidCourierLastname
 	}
