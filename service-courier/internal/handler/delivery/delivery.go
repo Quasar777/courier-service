@@ -1,4 +1,3 @@
-// NEEDS TO BE REMADE AS COURIER
 package delivery
 
 import (
@@ -20,61 +19,41 @@ func NewDeliveryController(u DeliveryUseCase) *DeliveryController {
 func (c *DeliveryController) Assign(w http.ResponseWriter, r *http.Request) {
 	var req dto.AssignDeliveryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error": "Invalid JSON"}`, http.StatusBadRequest)
+		responseErrorJSON(w, model.ErrInvalidJSON)
 		return
 	}
 
 	if req.OrderId == "" {
-		http.Error(w, `{"error": "Missing orderId"}`,  http.StatusBadRequest)
+		responseErrorJSON(w, model.ErrMissingRequiredFields)
 		return
 	}
 
 	response, err := c.useCase.AssignCourier(r.Context(), req)
 	if err != nil {
-		switch err {
-		case model.ErrNoAvailableCouriers:
-			http.Error(w, `{"error": "No available couriers"}`, http.StatusConflict)
-		default:
-			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
-		}
+		responseErrorJSON(w, err)
 		return
 	}
 
-	c.writeJSON(w, http.StatusOK, response)
+	writeJSON(w, http.StatusOK, response)
 }
 
 func (c *DeliveryController) Unassign(w http.ResponseWriter, r *http.Request) {
-	var req dto.UnassignDeliveryRequest 
+	var req dto.UnassignDeliveryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error": "Invalid JSON"}`, http.StatusBadRequest)
+		responseErrorJSON(w, model.ErrInvalidJSON)
 		return
 	}
 
 	if req.OrderId == "" {
-		http.Error(w, `{"error": "Missing orderId"}`,  http.StatusBadRequest)
+		responseErrorJSON(w, model.ErrMissingRequiredFields)
 		return
 	}
 
 	response, err := c.useCase.UnassignCourier(r.Context(), req)
 	if err != nil {
-		switch err {
-		case model.ErrNoRelationFound:
-			http.Error(w, `{"error": "Delivery not found"}`, http.StatusNotFound)
-		default:
-			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
-		}
+		responseErrorJSON(w, err)
 		return
 	}
 
-	c.writeJSON(w, http.StatusOK, response)
-}
-
-
-
-func (c *DeliveryController) writeJSON(w http.ResponseWriter, status int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		http.Error(w, `{"error": "Failed to encode response"}`, http.StatusInternalServerError)
-	}
+	writeJSON(w, http.StatusOK, response)
 }
