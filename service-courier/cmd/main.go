@@ -94,7 +94,7 @@ func main() {
 	
 	<-ctx.Done()
 
-	shutDownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	shutDownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout * time.Second)
 	defer cancel()
 	
 	log.Printf("shutting down server gracefully")
