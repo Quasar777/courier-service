@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	
-	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
 )
 
@@ -22,12 +21,12 @@ func NewDeliveryUseCase(deliveryRepo DeliveryRepository, courierRepo CourierRepo
 	}
 }
 
-func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req dto.AssignDeliveryRequest) (*dto.AssignedDeliveryResponse, error) {
-	if !isOrderIDValid(req.OrderId) {
+func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req AssignInput) (*AssignOutput, error) {
+	if !isOrderIDValid(req.OrderID) {
 		return nil, model.ErrInvalidOrderID
 	}
 	
-	result := dto.AssignedDeliveryResponse{}
+	result := AssignOutput{}
 
 	id, err := u.CourierRepo.GetCourierIdWithFewestOrders(ctx)
 	if err != nil {
@@ -35,7 +34,7 @@ func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req dto.AssignDeliv
 	}
 
 	result.CourierId = id
-	result.OrderId = req.OrderId
+	result.OrderId = req.OrderID
 
 	assignedCourier, err := u.CourierRepo.GetOneById(ctx, result.CourierId)
 	if err != nil {
@@ -56,16 +55,16 @@ func (u *DeliveryUseCase) AssignCourier(ctx context.Context, req dto.AssignDeliv
 	return &result, nil
 }
 
-func (u *DeliveryUseCase) UnassignCourier(ctx context.Context, req dto.UnassignDeliveryRequest) (*dto.UnassignedDeliveryResponse, error) {
-	if !isOrderIDValid(req.OrderId) {
+func (u *DeliveryUseCase) UnassignCourier(ctx context.Context, req UnassignInput) (*UnassignOutput, error) {
+	if !isOrderIDValid(req.OrderID) {
 		return nil, model.ErrInvalidOrderID
 	}
 
-	result := dto.UnassignedDeliveryResponse{
-		OrderId: req.OrderId,
+	result := UnassignOutput{
+		OrderId: req.OrderID,
 	}
 
-	d, err := u.DeliveryRepo.UnassignWithUpdate(ctx, req.OrderId)
+	d, err := u.DeliveryRepo.UnassignWithUpdate(ctx, req.OrderID)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err

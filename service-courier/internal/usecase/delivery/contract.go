@@ -25,3 +25,25 @@ type DeadlineCalculator interface {
 type deadlineCalculatorFactory interface {
 	GetDeliveryCalculator(courierType model.CourierTransportType) DeadlineCalculator
 }
+
+// I/O
+type AssignInput struct {
+	OrderID string
+}
+
+type AssignOutput struct {
+	CourierId     int
+	OrderId       string
+	TransportType string
+	Deadline      time.Time
+}
+
+type UnassignInput struct {
+	OrderID string
+}
+
+type UnassignOutput struct {
+	OrderId   string
+	CourierId int
+	Status    string
+}

@@ -28,13 +28,15 @@ func (c *DeliveryController) Assign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := c.useCase.AssignCourier(r.Context(), req)
+	mappedReq := toAssignInput(req)
+	response, err := c.useCase.AssignCourier(r.Context(), mappedReq)
 	if err != nil {
 		responseErrorJSON(w, err)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, response)
+	mappedResp := toAssignResponse(response)
+	writeJSON(w, http.StatusOK, mappedResp)
 }
 
 func (c *DeliveryController) Unassign(w http.ResponseWriter, r *http.Request) {
@@ -49,11 +51,13 @@ func (c *DeliveryController) Unassign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := c.useCase.UnassignCourier(r.Context(), req)
+	mappedReq := toUnassignInput(req)
+	response, err := c.useCase.UnassignCourier(r.Context(), mappedReq)
 	if err != nil {
 		responseErrorJSON(w, err)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, response)
+	mappedResp := toUnassignResponse(response)
+	writeJSON(w, http.StatusOK, mappedResp)
 }

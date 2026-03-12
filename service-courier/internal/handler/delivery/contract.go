@@ -3,10 +3,10 @@ package delivery
 import (
 	"context"
 
-	"github.com/Quasar777/courier-service/internal/handler/dto"
+	uc "github.com/Quasar777/courier-service/internal/usecase/delivery"
 )
 
 type DeliveryUseCase interface {
-	AssignCourier(ctx context.Context, req dto.AssignDeliveryRequest) (*dto.AssignedDeliveryResponse, error)
-	UnassignCourier(ctx context.Context, req dto.UnassignDeliveryRequest) (*dto.UnassignedDeliveryResponse, error) 
+	AssignCourier(ctx context.Context, req uc.AssignInput) (*uc.AssignOutput, error)
+	UnassignCourier(ctx context.Context, req uc.UnassignInput) (*uc.UnassignOutput, error) 
 }
