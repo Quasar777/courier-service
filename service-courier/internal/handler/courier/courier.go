@@ -7,8 +7,7 @@ import (
 
 	"github.com/Quasar777/courier-service/internal/handler/dto"
 	"github.com/Quasar777/courier-service/internal/model"
-	uc "github.com/Quasar777/courier-service/internal/usecase/courier"
-
+	
 	"github.com/go-chi/chi/v5"
 )
 
@@ -115,27 +114,3 @@ func (c *CourierController) Delete(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, response)
 }
 
-func toUseCaseCreateModel(r dto.CreateCourierRequest) uc.CreateCourierInput {
-	res := uc.CreateCourierInput{
-		Name: r.Name,
-		Lastname: r.Lastname,
-		Phone: r.Phone,
-		Status: r.Status,
-		TransportType: r.TransportType,
-	}
-
-	return res
-}
-
-func toUseCaseUpdateModel(r dto.UpdateCourierRequest) uc.UpdateCourierInput {
-	res := uc.UpdateCourierInput{
-		ID: r.Id,
-		Name: r.Name,
-		Lastname: r.Lastname,
-		Phone: r.Phone,
-		Status: r.Status,
-		TransportType: r.TransportType,
-	}
-
-	return res
-}
