@@ -212,6 +212,7 @@ func toRepoCreateCourierModel(r CreateCourierInput) model.Courier {
 
 func toRepoUpdateCourierModel(r UpdateCourierInput) model.Courier {
 	return model.Courier{
+		Id: r.ID,
 		Name: r.Name,
 		Lastname: r.Lastname,
 		Phone: r.Phone,
