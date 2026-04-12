@@ -6,49 +6,39 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
+	"github.com/Quasar777/courier-service/internal/config"
 	courierHandler "github.com/Quasar777/courier-service/internal/handler/courier"
 	deliveryHandler "github.com/Quasar777/courier-service/internal/handler/delivery"
 	courierRepo "github.com/Quasar777/courier-service/internal/repository/courier"
 	deliveryRepo "github.com/Quasar777/courier-service/internal/repository/delivery"
-	worker "github.com/Quasar777/courier-service/internal/usecase/delivery/worker"
 	"github.com/Quasar777/courier-service/internal/usecase/courier"
 	"github.com/Quasar777/courier-service/internal/usecase/delivery"
+	worker "github.com/Quasar777/courier-service/internal/usecase/delivery/worker"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 )
 
-const (
-	defaultPort     = "8080"
-	shutdownTimeout = 5 * time.Second
-)
+const shutdownTimeout = 5 * time.Second
 
 func main() {
-	if os.Getenv("APP_ENV") != "docker" {
-		err := godotenv.Load()
-		if err != nil {
-			log.Fatal("error when loading .env file:", err)
-		}
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("config load failed: %v", err)
 	}
 
-	port := getEnv("SERVER_PORT", defaultPort)
-	flagPort := flag.String("port", port, "specifying a port")
+	flagPort := flag.Int("port", cfg.ServerPort, "specifying a port")
 	flag.Parse()
-	if *flagPort != port {
-		port = *flagPort
-	}
+	cfg.ServerPort = *flagPort
 
-	dbPool, err := mustInitPool(context.Background())
-    if err != nil {
-        log.Fatal("error connecting to database: ", err)
-    }
-    defer dbPool.Close()
+	dbPool, err := mustInitPool(context.Background(), cfg)
+	if err != nil {
+		log.Fatal("error connecting to database: ", err)
+	}
+	defer dbPool.Close()
 
 	deadlineFactory := delivery.NewFactory()
 
@@ -59,50 +49,23 @@ func main() {
 	// Use Cases
 	courierUseCase := courier.NewCourierUseCase(courierRepository)
 	deliveryUseCase := delivery.NewDeliveryUseCase(deliveryRepository, courierRepository, deadlineFactory)
-	worker := worker.NewWorker(courierRepository)
+	deliveryWorker := worker.NewWorker(courierRepository)
 
 	// HTTP Handlers
-	courier := courierHandler.NewCourierController(courierUseCase)
-	delivery := deliveryHandler.NewDeliveryController(deliveryUseCase)
-	
+	courierController := courierHandler.NewCourierController(courierUseCase)
+	deliveryController := deliveryHandler.NewDeliveryController(deliveryUseCase)
+
 	srv := &http.Server{
-		Addr: fmt.Sprintf(":%v", port),
-		Handler: initRouter(courier, delivery),
+		Addr:    fmt.Sprintf(":%d", cfg.ServerPort),
+		Handler: initRouter(courierController, deliveryController),
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	go func() {
-		log.Println("starting courier-service on port", port)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("server starting failed: %v", err)
-		}
-	}() 
+	go startDeliveryChecker(ctx, deliveryWorker, cfg.DeliveryCheckerInterval)
 
-	// Delivery Checker
-	go func() {
-		intervalSec, err := strconv.Atoi(getEnv("DELIVERY_CHECKER_INTERVAL", "10"))
-		if err != nil {
-			intervalSec = 10
-		}
-		
-		interval := time.Duration(intervalSec) * time.Second
-		
-		worker.RunDeliveryChecker(ctx, interval)
-	}()
-	
-	<-ctx.Done()
-
-	shutDownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
-	defer cancel()
-	
-	log.Printf("shutting down server gracefully")
-	if err = srv.Shutdown(shutDownCtx); err != nil {
-		log.Println("error when shutting down:", err)
-	} else {
-		log.Println("server stopped")
-	}
+	startServerWithGS(ctx, srv, cfg.ServerPort)
 }
 
 func initRouter(courier *courierHandler.CourierController, delivery *deliveryHandler.DeliveryController) *chi.Mux {
@@ -120,16 +83,17 @@ func initRouter(courier *courierHandler.CourierController, delivery *deliveryHan
 	return r
 }
 
-func mustInitPool(ctx context.Context) (*pgxpool.Pool, error) {
-	cfg, err := pgxpool.ParseConfig(getConnectionString())
+func mustInitPool(ctx context.Context, appCfg config.Config) (*pgxpool.Pool, error) {
+	poolCfg, err := pgxpool.ParseConfig(appCfg.DBConnectionString)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	cfg.MaxConns = 10
-	cfg.MaxConnLifetime = time.Hour
-	cfg.MinConns = 5
 
-	pool, err := pgxpool.NewWithConfig(ctx, cfg)
+	poolCfg.MaxConns = appCfg.DBMaxConns
+	poolCfg.MaxConnLifetime = appCfg.DBMaxConnLifetime
+	poolCfg.MinConns = appCfg.DBMinConns
+
+	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -137,46 +101,50 @@ func mustInitPool(ctx context.Context) (*pgxpool.Pool, error) {
 	pingAttemptsLimit := 3
 	var pingErr error
 
-	for i := range pingAttemptsLimit {
-		pingCtx, pingCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	for i := 0; i < pingAttemptsLimit; i++ {
+		pingCtx, pingCancel := context.WithTimeout(ctx, 5*time.Second)
 		pingErr = pool.Ping(pingCtx)
 		pingCancel()
 		if pingErr == nil {
 			break
 		}
-		log.Printf("db ping attempt %d failed: %v", i, pingErr)
-		if i < pingAttemptsLimit {
+
+		log.Printf("db ping attempt %d failed: %v", i+1, pingErr)
+		if i < pingAttemptsLimit-1 {
 			time.Sleep(500 * time.Millisecond)
 		}
 	}
 
 	if pingErr != nil {
-		log.Fatalf("Unable to ping database")
+		pool.Close()
+		return nil, fmt.Errorf("unable to ping database: %w", pingErr)
 	}
-	
+
 	log.Println("Database connection pool established")
 	return pool, nil
 }
 
-func getConnectionString() string {
-	if os.Getenv("APP_ENV") != "docker" {
-		err := godotenv.Load()
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
-	}
-
-	connString := os.Getenv("DB_CONNECTION_STRING")
-	if connString == "" {
-		log.Fatal("DB_CONNECTION_STRING not set in .env")
-	}
-
-	return connString
+func startDeliveryChecker(ctx context.Context, worker *worker.Worker, interval time.Duration) {
+	worker.RunDeliveryChecker(ctx, interval)
 }
 
-func getEnv(key, def string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
+func startServerWithGS(ctx context.Context, srv *http.Server, port int) {
+	go func() {
+		log.Println("starting courier-service on port", port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server starting failed: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+
+	shutDownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	log.Printf("shutting down server gracefully")
+	if err := srv.Shutdown(shutDownCtx); err != nil {
+		log.Println("error when shutting down:", err)
+	} else {
+		log.Println("server stopped")
 	}
-	return def
 }

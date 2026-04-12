@@ -113,4 +113,3 @@ func (c *CourierController) Delete(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, response)
 }
-
