@@ -1,4 +1,9 @@
 *.env
+.gocache
 
-# macos
 .DS_Store
+bin/
+/.idea
+.idea
+.env
+.vscode

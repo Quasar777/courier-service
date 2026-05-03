@@ -1,0 +1,164 @@
+package main
+
+import (
+	"context"
+	"log"
+	"net"
+	"os/signal"
+	"sync"
+	"syscall"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/Quasar777/courier-service/internal/config/dbcfg"
+	"github.com/Quasar777/courier-service/internal/config/consumercfg"
+	"github.com/Quasar777/courier-service/internal/databus/kafka"
+	"github.com/Quasar777/courier-service/internal/db/postgre"
+	"github.com/Quasar777/courier-service/internal/gateway/ordergrpc"
+	"github.com/Quasar777/courier-service/internal/handler/orderbus"
+	"github.com/Quasar777/courier-service/internal/middleware/mdrpc"
+	"github.com/Quasar777/courier-service/internal/proto/orderpb"
+	"github.com/Quasar777/courier-service/internal/repository/courierdb"
+	"github.com/Quasar777/courier-service/internal/repository/deliverydb"
+	"github.com/Quasar777/courier-service/internal/resilience/retry"
+	"github.com/Quasar777/courier-service/internal/router/metricsroute"
+	"github.com/Quasar777/courier-service/internal/server"
+	"github.com/Quasar777/courier-service/internal/service/deliveryapp"
+	"github.com/Quasar777/courier-service/observability/logger"
+	"github.com/Quasar777/courier-service/observability/metrics/metricsrpc"
+)
+
+func main() {
+	// Инициализация основного контекста
+	sysCtx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	// Инициализация логгера
+	zlog, err := logger.NewZapAdapter()
+	if err != nil {
+		log.Printf("failed to init logger: %v", err)
+	}
+	defer zlog.Sync()
+
+	// Загрузка env переменных в окружение
+	if err := godotenv.Load(); err != nil {
+		zlog.Error("Error loading .env file")
+	}
+	// Инициализация env переменных базы данных
+	dbEnv := dbcfg.SetupDataBaseEnv()
+
+	// Инициализация env переменных консьюмера
+	consumEnv := consumercfg.SetupConsumerEnv(zlog)
+
+	// Инициализация пула соединений с БД
+	pool, err := postgre.InitPool(sysCtx, zlog, dbEnv)
+	if err != nil {
+		zlog.Error("failed to create connection pool", logger.NewField("error", err))
+		return
+	}
+	defer pool.Close()
+
+	// Инициализация менеджера транзакций
+	txManager := postgre.NewTxManagerPostgre(zlog, pool)
+
+	// Инициализация фабрики времени
+	timeFactory := deliveryapp.NewFactoryTimeCalculator()
+
+	// Инициализация репозитория курьера
+	courDB := courierdb.NewCourierRepository(pool, txManager)
+
+	// Инициализация сервиса доставок
+	delDB := deliverydb.NewDeliveryRepository(pool, txManager)
+	delApp := deliveryapp.NewDeliveryService(deliveryapp.Arguments{
+		DelRepo: delDB, CourRepo: courDB, Factory: timeFactory, TxManager: txManager,
+	})
+
+	// Инициализация фабрики бизнес-операций
+	eventFactory := deliveryapp.NewFactoryEventStrategy(delApp)
+
+	// Инициализация Logger интерцептора
+	loggerInter := mdrpc.NewLoggerInterceptor(zlog)
+
+	// Инициализация Retry интерцептора
+	strategy := retry.NewExponentialBackoffWithJitter(retry.Arguments{
+		Multi:     consumEnv.Multiplier,
+		Jitter:    consumEnv.Jitter,
+		InitDelay: consumEnv.InitDelay,
+		MaxDelay:  consumEnv.MaxDelay,
+	})
+	retry := retry.NewRetryExecutor(
+		retry.WithMaxAttempts(consumEnv.MaxAttempts),
+		retry.WithStrategy(strategy),
+		retry.WithShouldRetry(retry.ShouldRetry),
+	)
+	retryInter := mdrpc.NewRetryInterceptor(retry)
+
+	// Инициализация Metrics RPC
+	metrics := metricsrpc.NewRPCMetrics()
+
+	// Инициализация Metrics интерцептора
+	metricsInter := mdrpc.NewMetricsInterceptor(metrics, retry.IsRetryFromContext)
+
+	// Инициализация gRPC соединения
+	grpcServer := net.JoinHostPort(consumEnv.OrderHost, consumEnv.OrderPort)
+	conn, err := grpc.NewClient(
+		grpcServer,
+		grpc.WithChainUnaryInterceptor(loggerInter, retryInter, metricsInter),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		zlog.Error("failed to connect to gRPC server", logger.NewField("error", err))
+		return
+	}
+	defer conn.Close()
+
+	// Инициализация gRPC клиента
+	clientPB := orderpb.NewOrdersServiceClient(conn)
+	orderGW := ordergrpc.NewGateway(clientPB)
+
+	// Инициализация обработчика топика changed Kafka
+	handler := orderbus.NewConsumeHandler(zlog, orderGW, eventFactory)
+
+	// Инициализация Kafka клиента
+	kafkaClient, err := kafka.NewKafkaClient(kafka.Arguments{
+		Log: zlog, Env: consumEnv, Handler: handler, Topics: []string{consumEnv.KafkaTopic},
+	})
+	if err != nil {
+		zlog.Error("failed to create Kafka client", logger.NewField("error", err))
+		return
+	}
+	defer kafkaClient.Close()
+
+	var wg sync.WaitGroup
+
+	// Запуск консьюминга Kafka
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		kafkaClient.Consume(sysCtx)
+	}()
+	zlog.Info("start kafka consuming")
+
+	// Инициализация роутера
+	router := chi.NewRouter()
+
+	// Инициализация обработчика метрик
+	metricsHTTP := promhttp.Handler().ServeHTTP
+
+	// Регистрация обработчика метрик в роутере
+	metricsroute.MetricsRoute(router, metricsHTTP)
+
+	// Запуск сервера метрик через graceful shutdown
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		server.StartServer(sysCtx, zlog, router, consumEnv.Host, consumEnv.Port)
+	}()
+
+	wg.Wait()
+	zlog.Info("consumer has been stopted")
+}
